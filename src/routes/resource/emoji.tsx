@@ -235,334 +235,334 @@ export function EmojiManagementPage() {
       <ScrollArea className="flex-1">
         <div className="space-y-4 sm:space-y-6 pr-4">
 
-      {/* 统计卡片 */}
-      {stats && (
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>总数</CardDescription>
-              <CardTitle className="text-2xl">{stats.total}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>已注册</CardDescription>
-              <CardTitle className="text-2xl text-green-600">
-                {stats.registered}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>已封禁</CardDescription>
-              <CardTitle className="text-2xl text-red-600">
-                {stats.banned}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>未注册</CardDescription>
-              <CardTitle className="text-2xl text-gray-600">
-                {stats.unregistered}
-              </CardTitle>
-            </CardHeader>
-          </Card>
-        </div>
-      )}
-
-      {/* 搜索和筛选 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            搜索和筛选
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
-              <Label>搜索</Label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="描述或哈希值..."
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value)
-                    setPage(1)
-                  }}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>注册状态</Label>
-              <Select
-                value={registeredFilter}
-                onValueChange={(value) => {
-                  setRegisteredFilter(value)
-                  setPage(1)
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部</SelectItem>
-                  <SelectItem value="registered">已注册</SelectItem>
-                  <SelectItem value="unregistered">未注册</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>封禁状态</Label>
-              <Select
-                value={bannedFilter}
-                onValueChange={(value) => {
-                  setBannedFilter(value)
-                  setPage(1)
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部</SelectItem>
-                  <SelectItem value="banned">已封禁</SelectItem>
-                  <SelectItem value="unbanned">未封禁</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>格式</Label>
-              <Select
-                value={formatFilter}
-                onValueChange={(value) => {
-                  setFormatFilter(value)
-                  setPage(1)
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部</SelectItem>
-                  {formatOptions.map((format) => (
-                    <SelectItem key={format} value={format}>
-                      {format.toUpperCase()} ({stats?.formats[format]})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadEmojiList}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              刷新
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 表情包列表 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>表情包列表</CardTitle>
-          <CardDescription>
-            共 {total} 个表情包，当前第 {page} 页
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">预览</TableHead>
-                  <TableHead>描述</TableHead>
-                  <TableHead>格式</TableHead>
-                  <TableHead>情绪标签</TableHead>
-                  <TableHead className="text-center">状态</TableHead>
-                  <TableHead className="text-right">使用次数</TableHead>
-                  <TableHead className="text-right">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {emojiList.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      暂无数据
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  emojiList.map((emoji) => (
-                    <TableRow key={emoji.id}>
-                      <TableCell>
-                        <div className="w-12 h-12 bg-muted rounded flex items-center justify-center overflow-hidden">
-                          <img
-                            src={getEmojiThumbnailUrl(emoji.id)}
-                            alt={emoji.description || '表情包'}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              // 图片加载失败时显示默认图标
-                              const target = e.target as HTMLImageElement
-                              target.style.display = 'none'
-                              const parent = target.parentElement
-                              if (parent) {
-                                parent.innerHTML = '<svg class="h-6 w-6 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>'
-                              }
-                            }}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium">{emoji.description || '无描述'}</div>
-                          <div className="text-xs text-muted-foreground font-mono">
-                            {emoji.emoji_hash.slice(0, 16)}...
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{emoji.format.toUpperCase()}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <EmotionTags emotions={emoji.emotion} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2 justify-center">
-                          {emoji.is_registered && (
-                            <Badge variant="default" className="bg-green-600">
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              已注册
-                            </Badge>
-                          )}
-                          {emoji.is_banned && (
-                            <Badge variant="destructive">
-                              <XCircle className="h-3 w-3 mr-1" />
-                              已封禁
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {emoji.usage_count}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewDetail(emoji)}
-                          >
-                            <Info className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(emoji)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          {!emoji.is_registered && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRegister(emoji)}
-                              className="text-green-600 hover:text-green-700"
-                            >
-                              <CheckCircle2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {!emoji.is_banned && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleBan(emoji)}
-                              className="text-orange-600 hover:text-orange-700"
-                            >
-                              <Ban className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(emoji)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* 分页 */}
-          {total > pageSize && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-muted-foreground">
-                显示 {(page - 1) * pageSize + 1} 到{' '}
-                {Math.min(page * pageSize, total)} 条，共 {total} 条
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  上一页
-                </Button>
-                <div className="text-sm">
-                  第 {page} / {Math.ceil(total / pageSize)} 页
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= Math.ceil(total / pageSize)}
-                >
-                  下一页
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+          {/* 统计卡片 */}
+          {stats && (
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>总数</CardDescription>
+                  <CardTitle className="text-2xl">{stats.total}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>已注册</CardDescription>
+                  <CardTitle className="text-2xl text-green-600">
+                    {stats.registered}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>已封禁</CardDescription>
+                  <CardTitle className="text-2xl text-red-600">
+                    {stats.banned}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>未注册</CardDescription>
+                  <CardTitle className="text-2xl text-gray-600">
+                    {stats.unregistered}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      {/* 详情对话框 */}
-      <EmojiDetailDialog
-        emoji={selectedEmoji}
-        open={detailDialogOpen}
-        onOpenChange={setDetailDialogOpen}
-      />
+          {/* 搜索和筛选 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                搜索和筛选
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-2">
+                  <Label>搜索</Label>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="描述或哈希值..."
+                      value={search}
+                      onChange={(e) => {
+                        setSearch(e.target.value)
+                        setPage(1)
+                      }}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
 
-      {/* 编辑对话框 */}
-      <EmojiEditDialog
-        emoji={selectedEmoji}
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        onSuccess={() => {
-          loadEmojiList()
-          loadStats()
-        }}
-      />
+                <div className="space-y-2">
+                  <Label>注册状态</Label>
+                  <Select
+                    value={registeredFilter}
+                    onValueChange={(value) => {
+                      setRegisteredFilter(value)
+                      setPage(1)
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全部</SelectItem>
+                      <SelectItem value="registered">已注册</SelectItem>
+                      <SelectItem value="unregistered">未注册</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>封禁状态</Label>
+                  <Select
+                    value={bannedFilter}
+                    onValueChange={(value) => {
+                      setBannedFilter(value)
+                      setPage(1)
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全部</SelectItem>
+                      <SelectItem value="banned">已封禁</SelectItem>
+                      <SelectItem value="unbanned">未封禁</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>格式</Label>
+                  <Select
+                    value={formatFilter}
+                    onValueChange={(value) => {
+                      setFormatFilter(value)
+                      setPage(1)
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全部</SelectItem>
+                      {formatOptions.map((format) => (
+                        <SelectItem key={format} value={format}>
+                          {format.toUpperCase()} ({stats?.formats[format]})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadEmojiList}
+                  disabled={loading}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  刷新
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 表情包列表 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>表情包列表</CardTitle>
+              <CardDescription>
+                共 {total} 个表情包，当前第 {page} 页
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-28">预览</TableHead>
+                      <TableHead>描述</TableHead>
+                      <TableHead>格式</TableHead>
+                      <TableHead>情绪标签</TableHead>
+                      <TableHead className="text-center">状态</TableHead>
+                      <TableHead className="text-right">使用次数</TableHead>
+                      <TableHead className="text-right">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {emojiList.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          暂无数据
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      emojiList.map((emoji) => (
+                        <TableRow key={emoji.id}>
+                          <TableCell>
+                            <div className="w-24 h-24 bg-muted rounded flex items-center justify-center overflow-hidden">
+                              <img
+                                src={getEmojiThumbnailUrl(emoji.id)}
+                                alt={emoji.description || '表情包'}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  // 图片加载失败时显示默认图标
+                                  const target = e.target as HTMLImageElement
+                                  target.style.display = 'none'
+                                  const parent = target.parentElement
+                                  if (parent) {
+                                    parent.innerHTML = '<svg class="h-6 w-6 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>'
+                                  }
+                                }}
+                              />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="font-medium">{emoji.description || '无描述'}</div>
+                              <div className="text-xs text-muted-foreground font-mono">
+                                {emoji.emoji_hash.slice(0, 16)}...
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{emoji.format.toUpperCase()}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <EmotionTags emotions={emoji.emotion} />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2 justify-center">
+                              {emoji.is_registered && (
+                                <Badge variant="default" className="bg-green-600">
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  已注册
+                                </Badge>
+                              )}
+                              {emoji.is_banned && (
+                                <Badge variant="destructive">
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  已封禁
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {emoji.usage_count}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleViewDetail(emoji)}
+                              >
+                                <Info className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(emoji)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              {!emoji.is_registered && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRegister(emoji)}
+                                  className="text-green-600 hover:text-green-700"
+                                >
+                                  <CheckCircle2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {!emoji.is_banned && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleBan(emoji)}
+                                  className="text-orange-600 hover:text-orange-700"
+                                >
+                                  <Ban className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(emoji)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* 分页 */}
+              {total > pageSize && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-muted-foreground">
+                    显示 {(page - 1) * pageSize + 1} 到{' '}
+                    {Math.min(page * pageSize, total)} 条，共 {total} 条
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      上一页
+                    </Button>
+                    <div className="text-sm">
+                      第 {page} / {Math.ceil(total / pageSize)} 页
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => p + 1)}
+                      disabled={page >= Math.ceil(total / pageSize)}
+                    >
+                      下一页
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* 详情对话框 */}
+          <EmojiDetailDialog
+            emoji={selectedEmoji}
+            open={detailDialogOpen}
+            onOpenChange={setDetailDialogOpen}
+          />
+
+          {/* 编辑对话框 */}
+          <EmojiEditDialog
+            emoji={selectedEmoji}
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            onSuccess={() => {
+              loadEmojiList()
+              loadStats()
+            }}
+          />
 
         </div>
       </ScrollArea>
@@ -862,8 +862,8 @@ function EmotionTags({ emotions }: { emotions: string[] | null | undefined }) {
   return (
     <div className="flex flex-wrap gap-1">
       {displayEmotions.map((emotion, index) => (
-        <Badge 
-          key={index} 
+        <Badge
+          key={index}
           variant="secondary"
           className="text-xs"
           title={emotion} // 悬停显示完整文本
@@ -872,8 +872,8 @@ function EmotionTags({ emotions }: { emotions: string[] | null | undefined }) {
         </Badge>
       ))}
       {remainingCount > 0 && (
-        <Badge 
-          variant="outline" 
+        <Badge
+          variant="outline"
           className="text-xs"
           title={`还有 ${remainingCount} 个标签: ${emotions.slice(3).join(', ')}`}
         >
