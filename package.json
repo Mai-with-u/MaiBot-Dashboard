@@ -1,7 +1,7 @@
 {
   "name": "maibot-dashboard",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.11.6",
   "type": "module",
   "scripts": {
     "dev": "vite",

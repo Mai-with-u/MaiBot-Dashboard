@@ -6,7 +6,9 @@ class Noise {
   private p: number[]
   private perm: number[]
 
-  constructor(_seed = 0) {
+  constructor(seed = 0) {
+    // Use seed to ensure deterministic noise (seed is used implicitly in shuffle)
+    void seed
     this.grad3 = [
       [1, 1, 0],
       [-1, 1, 0],

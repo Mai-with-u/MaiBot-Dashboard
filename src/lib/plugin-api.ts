@@ -364,7 +364,7 @@ export function getInstalledPluginVersion(pluginId: string, installedPlugins: In
 /**
  * 安装插件
  */
-export async function installPlugin(pluginId: string, repositoryUrl: string, branch: string = 'main'): Promise<any> {
+export async function installPlugin(pluginId: string, repositoryUrl: string, branch: string = 'main'): Promise<{ success: boolean; message: string }> {
   const response = await fetchWithAuth('/api/webui/plugins/install', {
     method: 'POST',
     

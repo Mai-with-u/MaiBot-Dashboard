@@ -109,11 +109,7 @@ export function ModelConfigPage() {
   })
 
   // 加载配置
-  useEffect(() => {
-    loadConfig()
-  }, [])
-
-  const loadConfig = async () => {
+  const loadConfig = useCallback(async () => {
     try {
       setLoading(true)
       const config = await getModelConfig()
@@ -133,7 +129,12 @@ export function ModelConfigPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [initialLoadRef])
+
+  // 初始加载
+  useEffect(() => {
+    loadConfig()
+  }, [loadConfig])
 
   // 获取指定提供商的配置
   const getProviderConfig = useCallback((providerName: string): ProviderConfig | undefined => {

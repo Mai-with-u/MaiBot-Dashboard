@@ -213,7 +213,7 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
 export function normalizeUrl(url: string): string {
   if (!url) return ''
   // 去掉尾部斜杠
-  let normalized = url.replace(/\/+$/, '')
+  const normalized = url.replace(/\/+$/, '')
   // 转小写用于比较
   return normalized.toLowerCase()
 }
