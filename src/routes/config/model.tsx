@@ -1,17 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {
   Dialog,
   DialogContent,
@@ -53,68 +45,19 @@ import {
 } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Pencil, Trash2, Save, Search, Info, Power, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Check, ChevronsUpDown, RefreshCw, Loader2, GraduationCap } from 'lucide-react'
-import { getModelConfig, updateModelConfig, updateModelConfigSection, fetchProviderModels, type ModelListItem } from '@/lib/config-api'
+import { Plus, Pencil, Trash2, Save, Search, Info, Power, Check, ChevronsUpDown, RefreshCw, Loader2, GraduationCap } from 'lucide-react'
+import { getModelConfig, updateModelConfig } from '@/lib/config-api'
 import { restartMaiBot } from '@/lib/system-api'
 import { useToast } from '@/hooks/use-toast'
-import { MultiSelect } from '@/components/ui/multi-select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { RestartingOverlay } from '@/components/RestartingOverlay'
 import { KeyValueEditor } from '@/components/ui/key-value-editor'
-import { findTemplateByBaseUrl, type ProviderTemplate } from './providerTemplates'
-import { useTour } from '@/components/tour'
-import { MODEL_ASSIGNMENT_TOUR_ID, modelAssignmentTourSteps, STEP_ROUTE_MAP } from '@/components/tour/tours/model-assignment-tour'
-import { useNavigate } from '@tanstack/react-router'
 
-interface ModelInfo {
-  model_identifier: string
-  name: string
-  api_provider: string
-  price_in: number | null
-  price_out: number | null
-  temperature?: number | null  // 模型级别温度，覆盖任务配置中的温度
-  max_tokens?: number | null   // 模型级别最大token数，覆盖任务配置中的max_tokens
-  force_stream_mode?: boolean
-  extra_params?: Record<string, unknown>
-}
-
-// 提供商完整配置接口
-interface ProviderConfig {
-  name: string
-  base_url: string
-  api_key: string
-  client_type: string
-  max_retry?: number
-  timeout?: number
-  retry_interval?: number
-}
-
-interface TaskConfig {
-  model_list: string[]
-  temperature?: number
-  max_tokens?: number
-  slow_threshold?: number
-}
-
-interface ModelTaskConfig {
-  utils: TaskConfig
-  utils_small: TaskConfig
-  tool_use: TaskConfig
-  replyer: TaskConfig
-  planner: TaskConfig
-  vlm: TaskConfig
-  voice: TaskConfig
-  embedding: TaskConfig
-  lpmm_entity_extract: TaskConfig
-  lpmm_rdf_build: TaskConfig
-  lpmm_qa: TaskConfig
-}
-
-// 模型列表缓存
-const modelListCache = new Map<string, { models: ModelListItem[], timestamp: number }>()
-const CACHE_TTL = 5 * 60 * 1000 // 5 分钟缓存
+// 导入模块化的类型定义和组件
+import type { ModelInfo, ProviderConfig, ModelTaskConfig, TaskConfig } from './model/types'
+import { TaskConfigCard, Pagination, ModelTable, ModelCardList } from './model/components'
+import { useModelTour, useModelFetcher, useModelAutoSave } from './model/hooks'
 
 export function ModelConfigPage() {
   const [models, setModels] = useState<ModelInfo[]>([])
@@ -140,12 +83,8 @@ export function ModelConfigPage() {
   const [pageSize, setPageSize] = useState(20)
   const [jumpToPage, setJumpToPage] = useState('')
   
-  // 模型列表获取相关状态
-  const [availableModels, setAvailableModels] = useState<ModelListItem[]>([])
-  const [fetchingModels, setFetchingModels] = useState(false)
-  const [modelFetchError, setModelFetchError] = useState<string | null>(null)
+  // 模型 Combobox 状态
   const [modelComboboxOpen, setModelComboboxOpen] = useState(false)
-  const [matchedTemplate, setMatchedTemplate] = useState<ProviderTemplate | null>(null)
   
   // 表单验证错误状态
   const [formErrors, setFormErrors] = useState<{
@@ -155,84 +94,19 @@ export function ModelConfigPage() {
   }>({})
   
   const { toast } = useToast()
-  const navigate = useNavigate()
-  const { registerTour, startTour, state: tourState, goToStep } = useTour()
+  
+  // Tour 引导 (使用 hook 封装的逻辑)
+  const { startTour: handleStartTour, isRunning: tourIsRunning } = useModelTour({
+    onCloseEditDialog: () => setEditDialogOpen(false),
+  })
 
-  // 用于防抖的定时器
-  const modelsAutoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const taskConfigAutoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const initialLoadRef = useRef(true)
-
-  // 注册 Tour
-  useEffect(() => {
-    registerTour(MODEL_ASSIGNMENT_TOUR_ID, modelAssignmentTourSteps)
-  }, [registerTour])
-
-  // 监听 Tour 步骤变化，处理页面导航
-  useEffect(() => {
-    if (tourState.activeTourId === MODEL_ASSIGNMENT_TOUR_ID && tourState.isRunning) {
-      const targetRoute = STEP_ROUTE_MAP[tourState.stepIndex]
-      if (targetRoute && !window.location.pathname.endsWith(targetRoute.replace('/config/', ''))) {
-        navigate({ to: targetRoute })
-      }
-    }
-  }, [tourState.stepIndex, tourState.activeTourId, tourState.isRunning, navigate])
-
-  // 监听 Tour 步骤变化，当从弹窗内步骤回退到弹窗外步骤时，自动关闭弹窗
-  // 模型弹窗步骤: 12-17 (index 12-17)，弹窗外步骤: 10-11 (index 10-11)
-  const prevTourStepRef = useRef(tourState.stepIndex)
-  useEffect(() => {
-    if (tourState.activeTourId === MODEL_ASSIGNMENT_TOUR_ID && tourState.isRunning) {
-      const prevStep = prevTourStepRef.current
-      const currentStep = tourState.stepIndex
-      
-      // 如果从弹窗内步骤 (12-17) 回退到弹窗外步骤 (<=11)，关闭弹窗
-      if (prevStep >= 12 && prevStep <= 17 && currentStep < 12) {
-        setEditDialogOpen(false)
-      }
-      
-      prevTourStepRef.current = currentStep
-    }
-  }, [tourState.stepIndex, tourState.activeTourId, tourState.isRunning])
-
-  // 处理 Tour 中需要用户点击才能继续的步骤
-  useEffect(() => {
-    if (tourState.activeTourId !== MODEL_ASSIGNMENT_TOUR_ID || !tourState.isRunning) return
-
-    const handleTourClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      const currentStep = tourState.stepIndex
-
-      // Step 3 (index 2): 点击添加提供商按钮
-      if (currentStep === 2 && target.closest('[data-tour="add-provider-button"]')) {
-        setTimeout(() => goToStep(3), 300)
-      }
-      // Step 10 (index 9): 点击取消按钮（关闭提供商弹窗）
-      else if (currentStep === 9 && target.closest('[data-tour="provider-cancel-button"]')) {
-        setTimeout(() => goToStep(10), 300)
-      }
-      // Step 12 (index 11): 点击添加模型按钮
-      else if (currentStep === 11 && target.closest('[data-tour="add-model-button"]')) {
-        setTimeout(() => goToStep(12), 300)
-      }
-      // Step 18 (index 17): 点击取消按钮（关闭模型弹窗）
-      else if (currentStep === 17 && target.closest('[data-tour="model-cancel-button"]')) {
-        setTimeout(() => goToStep(18), 300)
-      }
-      // Step 19 (index 18): 点击为模型分配功能标签页
-      else if (currentStep === 18 && target.closest('[data-tour="tasks-tab-trigger"]')) {
-        setTimeout(() => goToStep(19), 300)
-      }
-    }
-
-    document.addEventListener('click', handleTourClick, true)
-    return () => document.removeEventListener('click', handleTourClick, true)
-  }, [tourState, goToStep])
-
-  // 开始引导
-  const handleStartTour = () => {
-    startTour(MODEL_ASSIGNMENT_TOUR_ID)
-  }
+  // 自动保存 (使用 hook 封装的逻辑)
+  const { clearTimers: clearAutoSaveTimers, initialLoadRef } = useModelAutoSave({
+    models,
+    taskConfig,
+    onSavingChange: setAutoSaving,
+    onUnsavedChange: setHasUnsavedChanges,
+  })
 
   // 加载配置
   useEffect(() => {
@@ -266,77 +140,15 @@ export function ModelConfigPage() {
     return providerConfigs.find(p => p.name === providerName)
   }, [providerConfigs])
 
-  // 获取提供商的模型列表
-  const fetchModelsForProvider = useCallback(async (providerName: string, forceRefresh = false) => {
-    const config = getProviderConfig(providerName)
-    if (!config?.base_url) {
-      setAvailableModels([])
-      setMatchedTemplate(null)
-      setModelFetchError('提供商配置不完整，请先在"模型提供商配置"中配置')
-      return
-    }
-
-    // 检查 API Key 是否已配置
-    if (!config.api_key) {
-      setAvailableModels([])
-      setMatchedTemplate(null)
-      setModelFetchError('该提供商未配置 API Key，请先在"模型提供商配置"中填写')
-      return
-    }
-
-    // 查找匹配的模板
-    const template = findTemplateByBaseUrl(config.base_url)
-    setMatchedTemplate(template)
-
-    // 如果没有模板或模板不支持获取模型列表
-    if (!template?.modelFetcher) {
-      setAvailableModels([])
-      setModelFetchError(null)
-      return
-    }
-
-    // 检查缓存
-    const cacheKey = `${providerName}:${config.base_url}`
-    const cached = modelListCache.get(cacheKey)
-    if (!forceRefresh && cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      setAvailableModels(cached.models)
-      setModelFetchError(null)
-      return
-    }
-
-    // 获取模型列表
-    setFetchingModels(true)
-    setModelFetchError(null)
-
-    try {
-      const models = await fetchProviderModels(
-        providerName,
-        template.modelFetcher.parser,
-        template.modelFetcher.endpoint
-      )
-      setAvailableModels(models)
-      // 更新缓存
-      modelListCache.set(cacheKey, { models, timestamp: Date.now() })
-    } catch (error) {
-      console.error('获取模型列表失败:', error)
-      const errorMessage = (error as Error).message || '获取模型列表失败'
-      // 根据错误类型提供更友好的提示
-      if (errorMessage.includes('无效') || errorMessage.includes('过期') || errorMessage.includes('API Key')) {
-        setModelFetchError('API Key 无效或已过期，请检查"模型提供商配置"中的密钥')
-      } else if (errorMessage.includes('权限')) {
-        setModelFetchError('没有权限获取模型列表，请检查 API Key 权限')
-      } else if (errorMessage.includes('timeout') || errorMessage.includes('超时')) {
-        setModelFetchError('请求超时，请检查网络连接后重试')
-      } else if (errorMessage.includes('不支持')) {
-        setModelFetchError('该提供商不支持自动获取模型列表，请手动输入')
-      } else {
-        setModelFetchError(errorMessage)
-      }
-      setAvailableModels([])
-    } finally {
-      setFetchingModels(false)
-    }
-  }, [getProviderConfig])
+  // 模型列表获取 (使用 hook 封装的逻辑)
+  const {
+    availableModels,
+    fetchingModels,
+    modelFetchError,
+    matchedTemplate,
+    fetchModelsForProvider,
+    clearModels,
+  } = useModelFetcher({ getProviderConfig })
 
   // 当选择的提供商变化时，获取模型列表
   useEffect(() => {
@@ -371,12 +183,7 @@ export function ModelConfigPage() {
   const handleSaveAndRestart = async () => {
     try {
       setSaving(true)
-      if (modelsAutoSaveTimerRef.current) {
-        clearTimeout(modelsAutoSaveTimerRef.current)
-      }
-      if (taskConfigAutoSaveTimerRef.current) {
-        clearTimeout(taskConfigAutoSaveTimerRef.current)
-      }
+      clearAutoSaveTimers()
       const config = await getModelConfig()
       config.models = models
       config.model_task_config = taskConfig
@@ -416,92 +223,13 @@ export function ModelConfigPage() {
     })
   }
 
-  // 自动保存模型列表
-  const autoSaveModels = useCallback(async (newModels: ModelInfo[]) => {
-    if (initialLoadRef.current) return
-    
-    try {
-      setAutoSaving(true)
-      await updateModelConfigSection('models', newModels)
-      setHasUnsavedChanges(false)
-    } catch (error) {
-      console.error('自动保存模型列表失败:', error)
-      setHasUnsavedChanges(true)
-    } finally {
-      setAutoSaving(false)
-    }
-  }, [])
-
-  // 自动保存任务配置
-  const autoSaveTaskConfig = useCallback(async (newTaskConfig: ModelTaskConfig) => {
-    if (initialLoadRef.current) return
-    
-    try {
-      setAutoSaving(true)
-      await updateModelConfigSection('model_task_config', newTaskConfig)
-      setHasUnsavedChanges(false)
-    } catch (error) {
-      console.error('自动保存任务配置失败:', error)
-      setHasUnsavedChanges(true)
-    } finally {
-      setAutoSaving(false)
-    }
-  }, [])
-
-  // 监听 models 变化
-  useEffect(() => {
-    if (initialLoadRef.current) return
-
-    setHasUnsavedChanges(true)
-
-    if (modelsAutoSaveTimerRef.current) {
-      clearTimeout(modelsAutoSaveTimerRef.current)
-    }
-
-    modelsAutoSaveTimerRef.current = setTimeout(() => {
-      autoSaveModels(models)
-    }, 2000)
-
-    return () => {
-      if (modelsAutoSaveTimerRef.current) {
-        clearTimeout(modelsAutoSaveTimerRef.current)
-      }
-    }
-  }, [models, autoSaveModels])
-
-  // 监听 taskConfig 变化
-  useEffect(() => {
-    if (initialLoadRef.current || !taskConfig) return
-
-    setHasUnsavedChanges(true)
-
-    if (taskConfigAutoSaveTimerRef.current) {
-      clearTimeout(taskConfigAutoSaveTimerRef.current)
-    }
-
-    taskConfigAutoSaveTimerRef.current = setTimeout(() => {
-      autoSaveTaskConfig(taskConfig)
-    }, 2000)
-
-    return () => {
-      if (taskConfigAutoSaveTimerRef.current) {
-        clearTimeout(taskConfigAutoSaveTimerRef.current)
-      }
-    }
-  }, [taskConfig, autoSaveTaskConfig])
-
   // 保存配置（手动保存）
   const saveConfig = async () => {
     try {
       setSaving(true)
       
       // 先取消自动保存定时器
-      if (modelsAutoSaveTimerRef.current) {
-        clearTimeout(modelsAutoSaveTimerRef.current)
-      }
-      if (taskConfigAutoSaveTimerRef.current) {
-        clearTimeout(taskConfigAutoSaveTimerRef.current)
-      }
+      clearAutoSaveTimers()
 
       const config = await getModelConfig()
       config.models = models
@@ -910,252 +638,41 @@ export function ModelConfigPage() {
           </div>
 
           {/* 模型列表 - 移动端卡片视图 */}
-          <div className="md:hidden space-y-3">
-            {paginatedModels.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8 rounded-lg border bg-card">
-                {searchQuery ? '未找到匹配的模型' : '暂无模型配置'}
-              </div>
-            ) : (
-              paginatedModels.map((model, displayIndex) => {
-                const actualIndex = models.findIndex(m => m === model)
-                const used = isModelUsed(model.name)
-                return (
-                  <div key={displayIndex} className="rounded-lg border bg-card p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-base">{model.name}</h3>
-                          <Badge 
-                            variant={used ? "default" : "secondary"}
-                            className={used ? "bg-green-600 hover:bg-green-700" : ""}
-                          >
-                            {used ? '已使用' : '未使用'}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground break-all" title={model.model_identifier}>
-                          {model.model_identifier}
-                        </p>
-                      </div>
-                      <div className="flex gap-1 flex-shrink-0">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => openEditDialog(model, actualIndex)}
-                        >
-                          <Pencil className="h-4 w-4 mr-1" strokeWidth={2} fill="none" />
-                          编辑
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => openDeleteDialog(actualIndex)}
-                          className="bg-red-600 hover:bg-red-700 text-white"
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" strokeWidth={2} fill="none" />
-                          删除
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <span className="text-muted-foreground text-xs">提供商</span>
-                        <p className="font-medium">{model.api_provider}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground text-xs">模型温度</span>
-                        <p className="font-medium">{model.temperature != null ? model.temperature : <span className="text-muted-foreground">默认</span>}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground text-xs">输入价格</span>
-                        <p className="font-medium">¥{model.price_in}/M</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground text-xs">输出价格</span>
-                        <p className="font-medium">¥{model.price_out}/M</p>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })
-            )}
-          </div>
+          <ModelCardList
+            paginatedModels={paginatedModels}
+            allModels={models}
+            onEdit={openEditDialog}
+            onDelete={openDeleteDialog}
+            isModelUsed={isModelUsed}
+            searchQuery={searchQuery}
+          />
 
           {/* 模型列表 - 桌面端表格视图 */}
-          <div className="hidden md:block rounded-lg border bg-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={selectedModels.size === filteredModels.length && filteredModels.length > 0}
-                        onCheckedChange={toggleSelectAll}
-                      />
-                    </TableHead>
-                    <TableHead className="w-24">使用状态</TableHead>
-                    <TableHead>模型名称</TableHead>
-                    <TableHead>模型标识符</TableHead>
-                    <TableHead>提供商</TableHead>
-                    <TableHead className="text-center">温度</TableHead>
-                    <TableHead className="text-right">输入价格</TableHead>
-                    <TableHead className="text-right">输出价格</TableHead>
-                    <TableHead className="text-right">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-              <TableBody>
-                {paginatedModels.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                      {searchQuery ? '未找到匹配的模型' : '暂无模型配置'}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedModels.map((model, displayIndex) => {
-                    const actualIndex = models.findIndex(m => m === model)
-                    const used = isModelUsed(model.name)
-                    return (
-                      <TableRow key={displayIndex}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedModels.has(actualIndex)}
-                            onCheckedChange={() => toggleModelSelection(actualIndex)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={used ? "default" : "secondary"}
-                            className={used ? "bg-green-600 hover:bg-green-700" : ""}
-                          >
-                            {used ? '已使用' : '未使用'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">{model.name}</TableCell>
-                        <TableCell className="max-w-xs truncate" title={model.model_identifier}>
-                          {model.model_identifier}
-                        </TableCell>
-                        <TableCell>{model.api_provider}</TableCell>
-                        <TableCell className="text-center">
-                          {model.temperature != null ? model.temperature : <span className="text-muted-foreground">-</span>}
-                        </TableCell>
-                        <TableCell className="text-right">¥{model.price_in}/M</TableCell>
-                        <TableCell className="text-right">¥{model.price_out}/M</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => openEditDialog(model, actualIndex)}
-                            >
-                              <Pencil className="h-4 w-4 mr-1" strokeWidth={2} fill="none" />
-                              编辑
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => openDeleteDialog(actualIndex)}
-                              className="bg-red-600 hover:bg-red-700 text-white"
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" strokeWidth={2} fill="none" />
-                              删除
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })
-                )}
-              </TableBody>
-            </Table>
-            </div>
-          </div>
+          <ModelTable
+            paginatedModels={paginatedModels}
+            allModels={models}
+            filteredModels={filteredModels}
+            selectedModels={selectedModels}
+            onEdit={openEditDialog}
+            onDelete={openDeleteDialog}
+            onToggleSelection={toggleModelSelection}
+            onToggleSelectAll={toggleSelectAll}
+            isModelUsed={isModelUsed}
+            searchQuery={searchQuery}
+          />
 
-          {/* 分页 - 增强版 */}
-          {filteredModels.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="page-size-model" className="text-sm whitespace-nowrap">每页显示</Label>
-                <Select
-                  value={pageSize.toString()}
-                  onValueChange={(value) => {
-                    setPageSize(parseInt(value))
-                    setPage(1)
-                    setSelectedModels(new Set())
-                  }}
-                >
-                  <SelectTrigger id="page-size-model" className="w-20">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span className="text-sm text-muted-foreground">
-                  显示 {(page - 1) * pageSize + 1} 到{' '}
-                  {Math.min(page * pageSize, filteredModels.length)} 条，共 {filteredModels.length} 条
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(1)}
-                  disabled={page === 1}
-                  className="hidden sm:flex"
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4 sm:mr-1" />
-                  <span className="hidden sm:inline">上一页</span>
-                </Button>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    value={jumpToPage}
-                    onChange={(e) => setJumpToPage(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleJumpToPage()}
-                    placeholder={page.toString()}
-                    className="w-16 h-8 text-center"
-                    min={1}
-                    max={totalPages}
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleJumpToPage}
-                    disabled={!jumpToPage}
-                    className="h-8"
-                  >
-                    跳转
-                  </Button>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= totalPages}
-                >
-                  <span className="hidden sm:inline">下一页</span>
-                  <ChevronRight className="h-4 w-4 sm:ml-1" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(totalPages)}
-                  disabled={page >= totalPages}
-                  className="hidden sm:flex"
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* 分页 - 使用模块化组件 */}
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={filteredModels.length}
+            jumpToPage={jumpToPage}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            onJumpToPageChange={setJumpToPage}
+            onJumpToPage={handleJumpToPage}
+            onSelectionClear={() => setSelectedModels(new Set())}
+          />
         </TabsContent>
 
         {/* 模型任务配置标签页 */}
@@ -1286,7 +803,7 @@ export function ModelConfigPage() {
         <DialogContent 
           className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto" 
           data-tour="model-dialog"
-          preventOutsideClose={tourState.isRunning}
+          preventOutsideClose={tourIsRunning}
         >
           <DialogHeader>
             <DialogTitle>
@@ -1330,8 +847,7 @@ export function ModelConfigPage() {
                     prev ? { ...prev, api_provider: value } : null
                   )
                   // 清空模型列表和错误状态，等待 useEffect 重新获取
-                  setAvailableModels([])
-                  setModelFetchError(null)
+                  clearModels()
                   if (formErrors.api_provider) {
                     setFormErrors((prev) => ({ ...prev, api_provider: undefined }))
                   }
@@ -1755,125 +1271,5 @@ export function ModelConfigPage() {
       )}
       </div>
     </ScrollArea>
-  )
-}
-
-// 任务配置卡片组件
-interface TaskConfigCardProps {
-  title: string
-  description: string
-  taskConfig: TaskConfig
-  modelNames: string[]
-  onChange: (field: keyof TaskConfig, value: string[] | number) => void
-  hideTemperature?: boolean
-  hideMaxTokens?: boolean
-  dataTour?: string
-}
-
-function TaskConfigCard({
-  title,
-  description,
-  taskConfig,
-  modelNames,
-  onChange,
-  hideTemperature = false,
-  hideMaxTokens = false,
-  dataTour,
-}: TaskConfigCardProps) {
-  const handleModelChange = (values: string[]) => {
-    onChange('model_list', values)
-  }
-
-  return (
-    <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-4">
-      <div>
-        <h4 className="font-semibold text-base sm:text-lg">{title}</h4>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-1">{description}</p>
-      </div>
-
-      <div className="grid gap-4">
-        {/* 模型列表 */}
-        <div className="grid gap-2" data-tour={dataTour}>
-          <Label>模型列表</Label>
-          <MultiSelect
-            options={modelNames.map((name) => ({ label: name, value: name }))}
-            selected={taskConfig.model_list || []}
-            onChange={handleModelChange}
-            placeholder="选择模型..."
-            emptyText="暂无可用模型"
-          />
-        </div>
-
-        {/* 温度和最大 Token */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {!hideTemperature && (
-            <div className="grid gap-3">
-              <div className="flex items-center justify-between">
-                <Label>温度</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="1"
-                  value={taskConfig.temperature ?? 0.3}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value)
-                    if (!isNaN(value) && value >= 0 && value <= 1) {
-                      onChange('temperature', value)
-                    }
-                  }}
-                  className="w-20 h-8 text-sm"
-                />
-              </div>
-              <Slider
-                value={[taskConfig.temperature ?? 0.3]}
-                onValueChange={(values) => onChange('temperature', values[0])}
-                min={0}
-                max={1}
-                step={0.1}
-                className="w-full"
-              />
-            </div>
-          )}
-
-          {!hideMaxTokens && (
-            <div className="grid gap-2">
-              <Label>最大 Token</Label>
-              <Input
-                type="number"
-                step="1"
-                min="1"
-                value={taskConfig.max_tokens ?? 1024}
-                onChange={(e) => onChange('max_tokens', parseInt(e.target.value))}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* 慢请求阈值 */}
-        <div className="grid gap-2">
-          <div className="flex items-center justify-between">
-            <Label>慢请求阈值 (秒)</Label>
-            <span className="text-xs text-muted-foreground">超时警告</span>
-          </div>
-          <Input
-            type="number"
-            step="1"
-            min="1"
-            value={taskConfig.slow_threshold ?? 15}
-            onChange={(e) => {
-              const value = parseInt(e.target.value)
-              if (!isNaN(value) && value >= 1) {
-                onChange('slow_threshold', value)
-              }
-            }}
-            placeholder="15"
-          />
-          <p className="text-xs text-muted-foreground">
-            模型响应时间超过此阈值将输出警告日志
-          </p>
-        </div>
-      </div>
-    </div>
   )
 }
