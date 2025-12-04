@@ -1,0 +1,180 @@
+import React from 'react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import type { EmojiConfig, MemoryConfig, ToolConfig } from '../types'
+
+interface FeaturesSectionProps {
+  emojiConfig: EmojiConfig
+  memoryConfig: MemoryConfig
+  toolConfig: ToolConfig
+  onEmojiChange: (config: EmojiConfig) => void
+  onMemoryChange: (config: MemoryConfig) => void
+  onToolChange: (config: ToolConfig) => void
+}
+
+export const FeaturesSection = React.memo(function FeaturesSection({
+  emojiConfig,
+  memoryConfig,
+  toolConfig,
+  onEmojiChange,
+  onMemoryChange,
+  onToolChange,
+}: FeaturesSectionProps) {
+  return (
+    <div className="space-y-6">
+      {/* 工具设置 */}
+      <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold mb-4">工具设置</h3>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="enable_tool"
+              checked={toolConfig.enable_tool}
+              onCheckedChange={(checked) => onToolChange({ ...toolConfig, enable_tool: checked })}
+            />
+            <Label htmlFor="enable_tool" className="cursor-pointer">
+              启用工具系统
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            允许麦麦使用各种工具来增强功能
+          </p>
+        </div>
+      </div>
+
+      {/* 记忆设置 */}
+      <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold mb-4">记忆设置</h3>
+          <div className="grid gap-2">
+            <Label htmlFor="max_agent_iterations">记忆思考深度</Label>
+            <Input
+              id="max_agent_iterations"
+              type="number"
+              min="1"
+              value={memoryConfig.max_agent_iterations}
+              onChange={(e) =>
+                onMemoryChange({ ...memoryConfig, max_agent_iterations: parseInt(e.target.value) })
+              }
+            />
+            <p className="text-xs text-muted-foreground">最低为 1（不深入思考）</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 表情包设置 */}
+      <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold mb-4">表情包设置</h3>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="emoji_chance">表情包激活概率</Label>
+              <Input
+                id="emoji_chance"
+                type="number"
+                step="0.1"
+                min="0"
+                max="1"
+                value={emojiConfig.emoji_chance}
+                onChange={(e) =>
+                  onEmojiChange({ ...emojiConfig, emoji_chance: parseFloat(e.target.value) })
+                }
+              />
+              <p className="text-xs text-muted-foreground">范围 0-1，越大越容易发送表情包</p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="max_reg_num">最大注册数量</Label>
+              <Input
+                id="max_reg_num"
+                type="number"
+                min="1"
+                value={emojiConfig.max_reg_num}
+                onChange={(e) =>
+                  onEmojiChange({ ...emojiConfig, max_reg_num: parseInt(e.target.value) })
+                }
+              />
+              <p className="text-xs text-muted-foreground">麦麦最多可以注册的表情包数量</p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="check_interval">检查间隔（分钟）</Label>
+              <Input
+                id="check_interval"
+                type="number"
+                min="1"
+                value={emojiConfig.check_interval}
+                onChange={(e) =>
+                  onEmojiChange({ ...emojiConfig, check_interval: parseInt(e.target.value) })
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                检查表情包（注册、破损、删除）的时间间隔
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="do_replace"
+                checked={emojiConfig.do_replace}
+                onCheckedChange={(checked) =>
+                  onEmojiChange({ ...emojiConfig, do_replace: checked })
+                }
+              />
+              <Label htmlFor="do_replace" className="cursor-pointer">
+                达到最大数量时替换表情包
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="steal_emoji"
+                checked={emojiConfig.steal_emoji}
+                onCheckedChange={(checked) =>
+                  onEmojiChange({ ...emojiConfig, steal_emoji: checked })
+                }
+              />
+              <Label htmlFor="steal_emoji" className="cursor-pointer">
+                偷取表情包
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-2">
+              允许麦麦将看到的表情包据为己有
+            </p>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="content_filtration"
+                checked={emojiConfig.content_filtration}
+                onCheckedChange={(checked) =>
+                  onEmojiChange({ ...emojiConfig, content_filtration: checked })
+                }
+              />
+              <Label htmlFor="content_filtration" className="cursor-pointer">
+                启用表情包过滤
+              </Label>
+            </div>
+
+            {emojiConfig.content_filtration && (
+              <div className="grid gap-2 pl-6 border-l-2 border-primary/20">
+                <Label htmlFor="filtration_prompt">过滤要求</Label>
+                <Input
+                  id="filtration_prompt"
+                  value={emojiConfig.filtration_prompt}
+                  onChange={(e) =>
+                    onEmojiChange({ ...emojiConfig, filtration_prompt: e.target.value })
+                  }
+                  placeholder="符合公序良俗"
+                />
+                <p className="text-xs text-muted-foreground">
+                  只有符合此要求的表情包才会被保存
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+})
