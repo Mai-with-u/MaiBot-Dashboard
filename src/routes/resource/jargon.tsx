@@ -1,6 +1,7 @@
 import { Hash, Search, Edit, Trash2, Eye, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Check, X, HelpCircle, Globe, MessageCircle } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
+import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -725,7 +726,13 @@ function JargonDetailDialog({
 
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">含义</Label>
-              <div className="text-sm p-2 bg-muted rounded break-all whitespace-pre-wrap">{jargon.meaning || '-'}</div>
+              <div className="text-sm p-2 bg-muted rounded break-all">
+                {jargon.meaning ? (
+                  <MarkdownRenderer content={jargon.meaning} />
+                ) : (
+                  '-'
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
