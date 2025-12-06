@@ -19,6 +19,7 @@ import { PluginsPage } from './routes/plugins'
 import { PluginConfigPage } from './routes/plugin-config'
 import { PluginMirrorsPage } from './routes/plugin-mirrors'
 import { ChatPage } from './routes/chat'
+import { WebUIFeedbackSurveyPage, MaiBotFeedbackSurveyPage } from './routes/survey'
 import { Layout } from './components/layout'
 import { checkAuth } from './hooks/use-auth'
 import { RouteErrorBoundary } from './components/error-boundary'
@@ -177,6 +178,20 @@ const settingsRoute = createRoute({
   component: SettingsPage,
 })
 
+// 问卷调查路由 - WebUI 反馈
+const webuiFeedbackSurveyRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/survey/webui-feedback',
+  component: WebUIFeedbackSurveyPage,
+})
+
+// 问卷调查路由 - 麦麦体验反馈
+const maibotFeedbackSurveyRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/survey/maibot-feedback',
+  component: MaiBotFeedbackSurveyPage,
+})
+
 // 404 路由
 const notFoundRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -205,6 +220,8 @@ const routeTree = rootRoute.addChildren([
     logsRoute,
     chatRoute,
     settingsRoute,
+    webuiFeedbackSurveyRoute,
+    maibotFeedbackSurveyRoute,
   ]),
   notFoundRoute,
 ])

@@ -41,6 +41,7 @@ import {
   Puzzle,
   CheckCircle2,
   AlertCircle,
+  ClipboardList,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -432,7 +433,7 @@ export function IndexPage() {
         </Card>
 
         {/* 快速操作卡片 */}
-        <Card className="lg:col-span-2">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Zap className="h-4 w-4" />
@@ -467,6 +468,35 @@ export function IndexPage() {
                 <Link to="/settings">
                   <Settings className="h-4 w-4" />
                   系统设置
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 问卷调查卡片 */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <ClipboardList className="h-4 w-4" />
+              反馈问卷
+            </CardTitle>
+            <CardDescription className="text-xs">
+              帮助我们改进产品体验
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" asChild className="gap-2">
+                <Link to="/survey/webui-feedback">
+                  <FileText className="h-4 w-4" />
+                  WebUI 反馈
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild className="gap-2">
+                <Link to="/survey/maibot-feedback">
+                  <MessageSquare className="h-4 w-4" />
+                  麦麦反馈
                 </Link>
               </Button>
             </div>
