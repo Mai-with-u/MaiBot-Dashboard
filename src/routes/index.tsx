@@ -301,6 +301,36 @@ export function IndexPage() {
     return `${hours}小时${minutes}分钟`
   }
 
+  // 格式化大数字（自动选择合适单位）
+  const formatNumber = (num: number): { display: string; exact: string; needsExact: boolean } => {
+    const exact = num.toLocaleString('zh-CN')
+    
+    if (num >= 1_000_000_000) {
+      return { display: `${(num / 1_000_000_000).toFixed(2)}B`, exact, needsExact: true }
+    } else if (num >= 1_000_000) {
+      return { display: `${(num / 1_000_000).toFixed(2)}M`, exact, needsExact: true }
+    } else if (num >= 10_000) {
+      return { display: `${(num / 1_000).toFixed(1)}K`, exact, needsExact: true }
+    } else if (num >= 1_000) {
+      return { display: `${(num / 1_000).toFixed(2)}K`, exact, needsExact: true }
+    }
+    return { display: exact, exact, needsExact: false }
+  }
+
+  // 格式化金额（自动选择合适单位）
+  const formatCurrency = (num: number): { display: string; exact: string; needsExact: boolean } => {
+    const exact = `¥${num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    
+    if (num >= 1_000_000) {
+      return { display: `¥${(num / 1_000_000).toFixed(2)}M`, exact, needsExact: true }
+    } else if (num >= 10_000) {
+      return { display: `¥${(num / 1_000).toFixed(1)}K`, exact, needsExact: true }
+    } else if (num >= 1_000) {
+      return { display: `¥${(num / 1_000).toFixed(2)}K`, exact, needsExact: true }
+    }
+    return { display: exact, exact, needsExact: false }
+  }
+
   // 格式化日期时间
   const formatDateTime = (isoString: string) => {
     const date = new Date(isoString)
@@ -512,7 +542,12 @@ export function IndexPage() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary.total_requests.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              {formatNumber(summary.total_requests).display}
+              {formatNumber(summary.total_requests).needsExact && (
+                <span className="text-xs font-normal text-muted-foreground ml-1">({formatNumber(summary.total_requests).exact})</span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               最近{timeRange < 48 ? timeRange + '小时' : Math.floor(timeRange / 24) + '天'}
             </p>
@@ -525,7 +560,12 @@ export function IndexPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">¥{summary.total_cost.toFixed(2)}</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(summary.total_cost).display}
+              {formatCurrency(summary.total_cost).needsExact && (
+                <span className="text-xs font-normal text-muted-foreground ml-1">({formatCurrency(summary.total_cost).exact})</span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               {summary.cost_per_hour > 0 ? `¥${summary.cost_per_hour.toFixed(2)}/小时` : '暂无数据'}
             </p>
@@ -539,11 +579,14 @@ export function IndexPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(summary.total_tokens / 1000).toFixed(1)}K
+              {formatNumber(summary.total_tokens).display}
+              {formatNumber(summary.total_tokens).needsExact && (
+                <span className="text-xs font-normal text-muted-foreground ml-1">({formatNumber(summary.total_tokens).exact})</span>
+              )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {summary.tokens_per_hour > 0
-                ? `${(summary.tokens_per_hour / 1000).toFixed(1)}K/小时`
+                ? `${formatNumber(summary.tokens_per_hour).display}/小时`
                 : '暂无数据'}
             </p>
           </CardContent>
@@ -569,7 +612,10 @@ export function IndexPage() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold">{formatTime(summary.online_time)}</div>
+            <div className="text-xl font-bold">
+              {formatTime(summary.online_time)}
+              <span className="text-xs font-normal text-muted-foreground ml-1">({summary.online_time.toLocaleString()}秒)</span>
+            </div>
           </CardContent>
         </Card>
 
@@ -579,9 +625,17 @@ export function IndexPage() {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-bold">{summary.total_messages.toLocaleString()}</div>
+            <div className="text-xl font-bold">
+              {formatNumber(summary.total_messages).display}
+              {formatNumber(summary.total_messages).needsExact && (
+                <span className="text-xs font-normal text-muted-foreground ml-1">({formatNumber(summary.total_messages).exact})</span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
-              回复 {summary.total_replies.toLocaleString()} 条
+              回复 {formatNumber(summary.total_replies).display}
+              {formatNumber(summary.total_replies).needsExact && (
+                <span>({formatNumber(summary.total_replies).exact})</span>
+              )} 条
             </p>
           </CardContent>
         </Card>

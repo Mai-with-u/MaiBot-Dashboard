@@ -217,6 +217,7 @@ export function ChatPage() {
   const [userName, setUserName] = useState(getStoredUserName())
   const [isEditingName, setIsEditingName] = useState(false)
   const [tempUserName, setTempUserName] = useState('')
+  const [isWaitingResponse, setIsWaitingResponse] = useState(false)  // 等待后端响应，禁止连续发送
   
   // 虚拟身份配置对话框状态
   const [showVirtualConfig, setShowVirtualConfig] = useState(false)
@@ -506,6 +507,8 @@ export function ChatPage() {
 
             case 'bot_message': {
               updateTab(tabId, { isTyping: false })
+              // 收到机器人响应，允许继续发送消息
+              setIsWaitingResponse(false)
               const processedSet = processedMessagesMapRef.current.get(tabId) || new Set()
               const contentHash = `bot-${data.content}-${Math.floor((data.timestamp || 0) * 1000)}`
               if (processedSet.has(contentHash)) {
@@ -543,6 +546,8 @@ export function ChatPage() {
               break
 
             case 'error':
+              // 收到错误响应，允许继续发送消息
+              setIsWaitingResponse(false)
               // 移除"思考中"占位消息，显示错误
               setTabs(prev => prev.map(tab => {
                 if (tab.id !== tabId) return tab
@@ -715,9 +720,13 @@ export function ChatPage() {
   // 发送消息到当前活动标签页
   const sendMessage = useCallback(() => {
     const ws = wsMapRef.current.get(activeTabId)
-    if (!inputValue.trim() || !ws || ws.readyState !== WebSocket.OPEN) {
+    // 禁止在等待响应时发送新消息
+    if (!inputValue.trim() || !ws || ws.readyState !== WebSocket.OPEN || isWaitingResponse) {
       return
     }
+
+    // 设置等待状态，禁止连续发送
+    setIsWaitingResponse(true)
 
     const displayName = activeTab?.type === 'virtual' 
       ? activeTab.virtualConfig?.userName || userName
@@ -759,7 +768,7 @@ export function ChatPage() {
     addMessageToTab(activeTabId, thinkingMessage)
 
     setInputValue('')
-  }, [inputValue, userName, activeTabId, activeTab, addMessageToTab])
+  }, [inputValue, userName, activeTabId, activeTab, addMessageToTab, isWaitingResponse])
 
   // 处理键盘事件
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -1392,17 +1401,17 @@ export function ChatPage() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={activeTab?.isConnected ? '输入消息...' : '等待连接...'}
-              disabled={!activeTab?.isConnected}
+              placeholder={isWaitingResponse ? '等待响应中...' : (activeTab?.isConnected ? '输入消息...' : '等待连接...')}
+              disabled={!activeTab?.isConnected || isWaitingResponse}
               className="flex-1 h-10 sm:h-10"
             />
             <Button
               onClick={sendMessage}
-              disabled={!activeTab?.isConnected || !inputValue.trim()}
+              disabled={!activeTab?.isConnected || !inputValue.trim() || isWaitingResponse}
               size="icon"
               className="h-10 w-10 shrink-0"
             >
-              <Send className="h-4 w-4" />
+              {isWaitingResponse ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
         </div>
