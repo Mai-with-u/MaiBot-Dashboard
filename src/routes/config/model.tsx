@@ -180,13 +180,35 @@ export function ModelConfigPage() {
     }
   }
 
+  // 清理模型中的 null 值（TOML 不支持 null）
+  const cleanModelForSave = (model: ModelInfo): ModelInfo => {
+    const cleaned: ModelInfo = {
+      model_identifier: model.model_identifier,
+      name: model.name,
+      api_provider: model.api_provider,
+      price_in: model.price_in ?? 0,
+      price_out: model.price_out ?? 0,
+      force_stream_mode: model.force_stream_mode ?? false,
+      extra_params: model.extra_params ?? {},
+    }
+    // 只有在有值时才添加可选字段
+    if (model.temperature != null) {
+      cleaned.temperature = model.temperature
+    }
+    if (model.max_tokens != null) {
+      cleaned.max_tokens = model.max_tokens
+    }
+    return cleaned
+  }
+
   // 保存并重启
   const handleSaveAndRestart = async () => {
     try {
       setSaving(true)
       clearAutoSaveTimers()
       const config = await getModelConfig()
-      config.models = models
+      // 清理每个模型中的 null 值
+      config.models = models.map(cleanModelForSave)
       config.model_task_config = taskConfig
       await updateModelConfig(config)
       setHasUnsavedChanges(false)
@@ -233,7 +255,8 @@ export function ModelConfigPage() {
       clearAutoSaveTimers()
 
       const config = await getModelConfig()
-      config.models = models
+      // 清理每个模型中的 null 值
+      config.models = models.map(cleanModelForSave)
       config.model_task_config = taskConfig
       await updateModelConfig(config)
       setHasUnsavedChanges(false)
@@ -300,11 +323,23 @@ export function ModelConfigPage() {
     // 清除错误状态
     setFormErrors({})
 
-    // 填充空值的默认值
-    const modelToSave = {
-      ...editingModel,
+    // 填充空值的默认值，并移除 null 值的可选字段（TOML 不支持 null）
+    const modelToSave: ModelInfo = {
+      model_identifier: editingModel.model_identifier,
+      name: editingModel.name,
+      api_provider: editingModel.api_provider,
       price_in: editingModel.price_in ?? 0,
       price_out: editingModel.price_out ?? 0,
+      force_stream_mode: editingModel.force_stream_mode ?? false,
+      extra_params: editingModel.extra_params ?? {},
+    }
+    
+    // 只有在有值时才添加可选字段
+    if (editingModel.temperature != null) {
+      modelToSave.temperature = editingModel.temperature
+    }
+    if (editingModel.max_tokens != null) {
+      modelToSave.max_tokens = editingModel.max_tokens
     }
 
     let newModels: ModelInfo[]

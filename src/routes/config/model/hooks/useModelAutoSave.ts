@@ -57,11 +57,34 @@ export function useModelAutoSave(
     }
   }, [])
 
+  // 清理模型中的 null 值（TOML 不支持 null）
+  const cleanModelForSave = useCallback((model: ModelInfo): ModelInfo => {
+    const cleaned: ModelInfo = {
+      model_identifier: model.model_identifier,
+      name: model.name,
+      api_provider: model.api_provider,
+      price_in: model.price_in ?? 0,
+      price_out: model.price_out ?? 0,
+      force_stream_mode: model.force_stream_mode ?? false,
+      extra_params: model.extra_params ?? {},
+    }
+    // 只有在有值时才添加可选字段
+    if (model.temperature != null) {
+      cleaned.temperature = model.temperature
+    }
+    if (model.max_tokens != null) {
+      cleaned.max_tokens = model.max_tokens
+    }
+    return cleaned
+  }, [])
+
   // 自动保存模型列表
   const autoSaveModels = useCallback(async (newModels: ModelInfo[]) => {
     try {
       onSavingChange?.(true)
-      await updateModelConfigSection('models', newModels)
+      // 清理每个模型中的 null 值
+      const cleanedModels = newModels.map(cleanModelForSave)
+      await updateModelConfigSection('models', cleanedModels)
       onUnsavedChange?.(false)
     } catch (error) {
       console.error('自动保存模型列表失败:', error)
@@ -69,7 +92,7 @@ export function useModelAutoSave(
     } finally {
       onSavingChange?.(false)
     }
-  }, [onSavingChange, onUnsavedChange])
+  }, [onSavingChange, onUnsavedChange, cleanModelForSave])
 
   // 自动保存任务配置
   const autoSaveTaskConfig = useCallback(async (newTaskConfig: ModelTaskConfig) => {

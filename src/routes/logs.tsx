@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -186,7 +185,7 @@ export function LogViewerPage() {
     count: filteredLogs.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => estimatedRowHeight,
-    overscan: 15, // 增加预渲染数量以提高流畅度
+    overscan: 50, // 增加预渲染数量以减少快速滚动时的空白
   })
 
   // 用于追踪是否是程序触发的滚动
@@ -486,10 +485,17 @@ export function LogViewerPage() {
 
         {/* 日志终端 - 使用虚拟滚动，填充剩余空间 */}
         <div className="flex-1 min-h-0 px-3 sm:px-4 lg:px-6 pb-3 sm:pb-4 lg:pb-6">
-          <Card className="bg-black dark:bg-gray-950 border-gray-800 dark:border-gray-900 h-full">
-            <ScrollArea 
-              viewportRef={parentRef}
-              className="h-full"
+          <Card className="bg-black dark:bg-gray-950 border-gray-800 dark:border-gray-900 h-full overflow-hidden">
+            <div 
+              ref={parentRef}
+              className={cn(
+                "h-full overflow-auto",
+                // 自定义滚动条样式 - 类似 ScrollArea
+                "[&::-webkit-scrollbar]:w-2.5",
+                "[&::-webkit-scrollbar-track]:bg-transparent",
+                "[&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full",
+                "[&::-webkit-scrollbar-thumb:hover]:bg-border/80"
+              )}
             >
               <div
                 className={cn("p-2 sm:p-3 font-mono relative", fontSizeConfig[fontSize].class)}
@@ -577,7 +583,7 @@ export function LogViewerPage() {
                 })
               )}
             </div>
-          </ScrollArea>
+          </div>
         </Card>
       </div>
     </div>
