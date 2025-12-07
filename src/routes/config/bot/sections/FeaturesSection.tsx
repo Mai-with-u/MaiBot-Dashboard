@@ -47,18 +47,67 @@ export const FeaturesSection = React.memo(function FeaturesSection({
       <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-4">
         <div>
           <h3 className="text-lg font-semibold mb-4">记忆设置</h3>
-          <div className="grid gap-2">
-            <Label htmlFor="max_agent_iterations">记忆思考深度</Label>
-            <Input
-              id="max_agent_iterations"
-              type="number"
-              min="1"
-              value={memoryConfig.max_agent_iterations}
-              onChange={(e) =>
-                onMemoryChange({ ...memoryConfig, max_agent_iterations: parseInt(e.target.value) })
-              }
-            />
-            <p className="text-xs text-muted-foreground">最低为 1（不深入思考）</p>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="max_agent_iterations">记忆思考深度</Label>
+              <Input
+                id="max_agent_iterations"
+                type="number"
+                min="1"
+                value={memoryConfig.max_agent_iterations}
+                onChange={(e) =>
+                  onMemoryChange({ ...memoryConfig, max_agent_iterations: parseInt(e.target.value) })
+                }
+              />
+              <p className="text-xs text-muted-foreground">最低为 1（不深入思考）</p>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="agent_timeout_seconds">最长回忆时间（秒）</Label>
+              <Input
+                id="agent_timeout_seconds"
+                type="number"
+                min="1"
+                step="0.1"
+                value={memoryConfig.agent_timeout_seconds ?? 120}
+                onChange={(e) =>
+                  onMemoryChange({ ...memoryConfig, agent_timeout_seconds: parseFloat(e.target.value) })
+                }
+              />
+              <p className="text-xs text-muted-foreground">记忆检索的超时时间，避免过长的等待</p>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="enable_jargon_detection"
+                checked={memoryConfig.enable_jargon_detection ?? true}
+                onCheckedChange={(checked) =>
+                  onMemoryChange({ ...memoryConfig, enable_jargon_detection: checked })
+                }
+              />
+              <Label htmlFor="enable_jargon_detection" className="cursor-pointer">
+                启用黑话识别
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-2">
+              记忆检索过程中是否启用黑话识别
+            </p>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="global_memory"
+                checked={memoryConfig.global_memory ?? false}
+                onCheckedChange={(checked) =>
+                  onMemoryChange({ ...memoryConfig, global_memory: checked })
+                }
+              />
+              <Label htmlFor="global_memory" className="cursor-pointer">
+                全局记忆查询
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-2">
+              允许记忆检索在所有聊天记录中进行全局查询（忽略当前聊天流）
+            </p>
           </div>
         </div>
       </div>

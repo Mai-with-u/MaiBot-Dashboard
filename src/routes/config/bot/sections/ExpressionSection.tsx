@@ -785,6 +785,28 @@ export const ExpressionSection = React.memo(function ExpressionSection({
           </div>
         </div>
       </div>
+
+      {/* 黑话设置 */}
+      <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold mb-4">黑话设置</h3>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="all_global_jargon"
+              checked={config.all_global_jargon ?? false}
+              onCheckedChange={(checked) =>
+                onChange({ ...config, all_global_jargon: checked })
+              }
+            />
+            <Label htmlFor="all_global_jargon" className="cursor-pointer">
+              全局黑话模式
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            开启后，新增的黑话将默认设为全局（所有聊天流共享）。关闭后，已记录的全局黑话不会改变，需要手动删除。
+          </p>
+        </div>
+      </div>
     </div>
   )
 })

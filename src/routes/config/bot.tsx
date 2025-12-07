@@ -3,7 +3,6 @@ import {
   BotInfoSection,
   PersonalitySection,
   ChatSection,
-  MoodSection,
   VoiceSection,
   LPMMSection,
   LogSection,
@@ -44,7 +43,6 @@ import type {
   EmojiConfig,
   MemoryConfig,
   ToolConfig,
-  MoodConfig,
   VoiceConfig,
   LPMMKnowledgeConfig,
   KeywordReactionConfig,
@@ -87,7 +85,6 @@ export function BotConfigPage() {
   const [emojiConfig, setEmojiConfig] = useState<EmojiConfig | null>(null)
   const [memoryConfig, setMemoryConfig] = useState<MemoryConfig | null>(null)
   const [toolConfig, setToolConfig] = useState<ToolConfig | null>(null)
-  const [moodConfig, setMoodConfig] = useState<MoodConfig | null>(null)
   const [voiceConfig, setVoiceConfig] = useState<VoiceConfig | null>(null)
   const [lpmmConfig, setLpmmConfig] = useState<LPMMKnowledgeConfig | null>(null)
   const [keywordReactionConfig, setKeywordReactionConfig] = useState<KeywordReactionConfig | null>(null)
@@ -126,7 +123,6 @@ export function BotConfigPage() {
     setEmojiConfig(config.emoji as EmojiConfig)
     setMemoryConfig(config.memory as MemoryConfig)
     setToolConfig(config.tool as ToolConfig)
-    setMoodConfig(config.mood as MoodConfig)
     setVoiceConfig(config.voice as VoiceConfig)
     setLpmmConfig(config.lpmm_knowledge as LPMMKnowledgeConfig)
     setKeywordReactionConfig(config.keyword_reaction as KeywordReactionConfig)
@@ -153,7 +149,6 @@ export function BotConfigPage() {
       emoji: emojiConfig,
       memory: memoryConfig,
       tool: toolConfig,
-      mood: moodConfig,
       voice: voiceConfig,
       lpmm_knowledge: lpmmConfig,
       keyword_reaction: keywordReactionConfig,
@@ -167,7 +162,7 @@ export function BotConfigPage() {
     }
   }, [
     botConfig, personalityConfig, chatConfig, expressionConfig,
-    emojiConfig, memoryConfig, toolConfig, moodConfig,
+    emojiConfig, memoryConfig, toolConfig,
     voiceConfig, lpmmConfig, keywordReactionConfig, responsePostProcessConfig,
     chineseTypoConfig, responseSplitterConfig, logConfig, debugConfig,
     maimMessageConfig, telemetryConfig
@@ -232,7 +227,6 @@ export function BotConfigPage() {
   useConfigAutoSave(emojiConfig, 'emoji', initialLoadRef.current, triggerAutoSave)
   useConfigAutoSave(memoryConfig, 'memory', initialLoadRef.current, triggerAutoSave)
   useConfigAutoSave(toolConfig, 'tool', initialLoadRef.current, triggerAutoSave)
-  useConfigAutoSave(moodConfig, 'mood', initialLoadRef.current, triggerAutoSave)
   useConfigAutoSave(voiceConfig, 'voice', initialLoadRef.current, triggerAutoSave)
   useConfigAutoSave(lpmmConfig, 'lpmm_knowledge', initialLoadRef.current, triggerAutoSave)
   useConfigAutoSave(keywordReactionConfig, 'keyword_reaction', initialLoadRef.current, triggerAutoSave)
@@ -529,14 +523,13 @@ export function BotConfigPage() {
           <>
         {/* 标签页 */}
         <Tabs defaultValue="bot" className="w-full">
-          <TabsList className="flex flex-wrap h-auto gap-1 p-1 sm:grid sm:grid-cols-5 lg:grid-cols-10">
+          <TabsList className="flex flex-wrap h-auto gap-1 p-1 sm:grid sm:grid-cols-5 lg:grid-cols-9">
             <TabsTrigger value="bot" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">基本信息</TabsTrigger>
             <TabsTrigger value="personality" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">人格</TabsTrigger>
             <TabsTrigger value="chat" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">聊天</TabsTrigger>
             <TabsTrigger value="expression" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">表达</TabsTrigger>
             <TabsTrigger value="features" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">功能</TabsTrigger>
             <TabsTrigger value="processing" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">处理</TabsTrigger>
-            <TabsTrigger value="mood" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">情绪</TabsTrigger>
             <TabsTrigger value="voice" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">语音</TabsTrigger>
             <TabsTrigger value="lpmm" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">知识库</TabsTrigger>
             <TabsTrigger value="other" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">其他</TabsTrigger>
@@ -593,11 +586,6 @@ export function BotConfigPage() {
               onResponseSplitterChange={setResponseSplitterConfig}
             />
           )}
-        </TabsContent>
-
-        {/* 情绪配置 */}
-        <TabsContent value="mood" className="space-y-4">
-          {moodConfig && <MoodSection config={moodConfig} onChange={setMoodConfig} />}
         </TabsContent>
 
         {/* 语音配置 */}

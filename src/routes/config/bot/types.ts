@@ -41,6 +41,7 @@ export interface ExpressionConfig {
   reflect: boolean
   reflect_operator_id: string
   allow_reflect: string[]
+  all_global_jargon: boolean
 }
 
 export interface EmojiConfig {
@@ -55,17 +56,16 @@ export interface EmojiConfig {
 
 export interface MemoryConfig {
   max_agent_iterations: number
+  agent_timeout_seconds: number
+  enable_jargon_detection: boolean
+  global_memory: boolean
 }
 
 export interface ToolConfig {
   enable_tool: boolean
 }
 
-export interface MoodConfig {
-  enable_mood: boolean
-  mood_update_threshold: number
-  emotion_style: string
-}
+// MoodConfig 已在后端移除
 
 export interface VoiceConfig {
   enable_asr: boolean
@@ -165,7 +165,6 @@ export interface AllBotConfigs {
   emojiConfig: EmojiConfig | null
   memoryConfig: MemoryConfig | null
   toolConfig: ToolConfig | null
-  moodConfig: MoodConfig | null
   voiceConfig: VoiceConfig | null
   lpmmConfig: LPMMKnowledgeConfig | null
   keywordReactionConfig: KeywordReactionConfig | null
@@ -189,7 +188,6 @@ export type ConfigSectionName =
   | 'emoji'
   | 'memory'
   | 'tool'
-  | 'mood'
   | 'voice'
   | 'lpmm_knowledge'
   | 'keyword_reaction'
