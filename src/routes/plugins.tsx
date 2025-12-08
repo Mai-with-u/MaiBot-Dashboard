@@ -73,6 +73,15 @@ export function PluginsPage() {
   const [maimaiVersion, setMaimaiVersion] = useState<MaimaiVersion | null>(null)
   const [, setInstalledPlugins] = useState<InstalledPlugin[]>([])
   const [pluginStats, setPluginStats] = useState<Record<string, PluginStatsData>>({})
+  
+  // 安装对话框状态
+  const [installDialogOpen, setInstallDialogOpen] = useState(false)
+  const [installingPlugin, setInstallingPlugin] = useState<PluginInfo | null>(null)
+  const [selectedBranch, setSelectedBranch] = useState('main')
+  const [customBranch, setCustomBranch] = useState('')
+  const [branchInputMode, setBranchInputMode] = useState<'preset' | 'custom'>('preset')
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  
   const { toast } = useToast()
 
   // 加载插件统计数据
@@ -402,8 +411,8 @@ export function PluginsPage() {
     setSelectedPlugin(null)
   }
 
-  // 安装插件处理
-  const handleInstall = async (plugin: PluginInfo) => {
+  // 打开安装对话框
+  const openInstallDialog = (plugin: PluginInfo) => {
     if (!gitStatus?.installed) {
       toast({
         title: '无法安装',
@@ -423,21 +432,45 @@ export function PluginsPage() {
       return
     }
 
+    setInstallingPlugin(plugin)
+    setSelectedBranch('main')
+    setCustomBranch('')
+    setBranchInputMode('preset')
+    setShowAdvancedOptions(false)
+    setInstallDialogOpen(true)
+  }
+
+  // 安装插件处理
+  const handleInstall = async () => {
+    if (!installingPlugin) return
+
+    const branch = branchInputMode === 'custom' ? customBranch : selectedBranch
+    
+    if (!branch || branch.trim() === '') {
+      toast({
+        title: '分支名称不能为空',
+        variant: 'destructive',
+      })
+      return
+    }
+
     try {
+      setInstallDialogOpen(false)
+      
       await installPlugin(
-        plugin.id,
-        plugin.manifest.repository_url || '',
-        'main'
+        installingPlugin.id,
+        installingPlugin.manifest.repository_url || '',
+        branch
       )
       
       // 记录下载统计
-      recordPluginDownload(plugin.id).catch(err => {
+      recordPluginDownload(installingPlugin.id).catch(err => {
         console.warn('Failed to record download:', err)
       })
       
       toast({
         title: '安装成功',
-        description: `${plugin.manifest.name} 已成功安装`,
+        description: `${installingPlugin.manifest.name} 已成功安装`,
       })
       
       // 重新加载已安装插件列表
@@ -447,7 +480,7 @@ export function PluginsPage() {
       // 重新合并已安装信息到插件列表
       setPlugins(prevPlugins => 
         prevPlugins.map(p => {
-          if (p.id === plugin.id) {
+          if (p.id === installingPlugin.id) {
             const isInstalled = checkPluginInstalled(p.id, installed)
             const installedVersion = getInstalledPluginVersion(p.id, installed)
             
@@ -466,6 +499,8 @@ export function PluginsPage() {
         description: error instanceof Error ? error.message : '未知错误',
         variant: 'destructive',
       })
+    } finally {
+      setInstallingPlugin(null)
     }
   }
 
@@ -898,7 +933,7 @@ export function PluginsPage() {
                             ? `不兼容当前版本 (需要 ${plugin.manifest?.host_application?.min_version || '未知'}${plugin.manifest?.host_application?.max_version ? ` - ${plugin.manifest.host_application.max_version}` : '+'}，当前 ${maimaiVersion?.version})`
                             : undefined
                       }
-                      onClick={() => handleInstall(plugin)}
+                      onClick={() => openInstallDialog(plugin)}
                     >
                       <Download className="h-4 w-4 mr-1" />
                       {loadProgress?.operation === 'install' && loadProgress?.plugin_id === plugin.id ? '安装中...' : '安装'}
@@ -1075,6 +1110,117 @@ export function PluginsPage() {
               </ScrollArea>
             </DialogContent>
           )}
+        </Dialog>
+
+        {/* 安装对话框 */}
+        <Dialog open={installDialogOpen} onOpenChange={setInstallDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>安装插件</DialogTitle>
+              <DialogDescription>
+                安装 {installingPlugin?.manifest.name}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {/* 基本信息 */}
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  版本: {installingPlugin?.manifest.version}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  作者: {typeof installingPlugin?.manifest.author === 'string' 
+                    ? installingPlugin.manifest.author 
+                    : installingPlugin?.manifest.author?.name}
+                </p>
+              </div>
+
+              {/* 高级选项开关 */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="advanced-options"
+                  checked={showAdvancedOptions}
+                  onCheckedChange={(checked) => setShowAdvancedOptions(checked as boolean)}
+                />
+                <label
+                  htmlFor="advanced-options"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  高级选项
+                </label>
+              </div>
+
+              {/* 高级选项内容 */}
+              {showAdvancedOptions && (
+                <div className="space-y-4 p-4 border rounded-lg">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">分支选择</label>
+                    
+                    <Tabs value={branchInputMode} onValueChange={(value) => setBranchInputMode(value as 'preset' | 'custom')}>
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="preset" className="text-xs">预设分支</TabsTrigger>
+                        <TabsTrigger value="custom" className="text-xs">自定义分支</TabsTrigger>
+                      </TabsList>
+                      
+                      {/* 预设分支选择 */}
+                      {branchInputMode === 'preset' && (
+                        <div className="mt-3">
+                          <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="选择分支" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="main">main (默认)</SelectItem>
+                              <SelectItem value="master">master</SelectItem>
+                              <SelectItem value="dev">dev (开发版)</SelectItem>
+                              <SelectItem value="develop">develop</SelectItem>
+                              <SelectItem value="beta">beta (测试版)</SelectItem>
+                              <SelectItem value="stable">stable (稳定版)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {/* 自定义分支输入 */}
+                      {branchInputMode === 'custom' && (
+                        <div className="space-y-2 mt-3">
+                          <input
+                            type="text"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder="输入分支名称，例如: feature/new-feature"
+                            value={customBranch}
+                            onChange={(e) => setCustomBranch(e.target.value)}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            输入 Git 分支名称、标签或提交哈希
+                          </p>
+                        </div>
+                      )}
+                    </Tabs>
+                  </div>
+                </div>
+              )}
+
+              {!showAdvancedOptions && (
+                <p className="text-sm text-muted-foreground">
+                  将从默认分支 (main) 安装插件
+                </p>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setInstallDialogOpen(false)}
+              >
+                取消
+              </Button>
+              <Button onClick={handleInstall}>
+                <Download className="h-4 w-4 mr-2" />
+                安装
+              </Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
       </div>
     </ScrollArea>

@@ -16,6 +16,7 @@ import { PersonManagementPage } from './routes/person'
 import { KnowledgeGraphPage } from './routes/resource/knowledge-graph'
 import { LogViewerPage } from './routes/logs'
 import { PluginsPage } from './routes/plugins'
+import { ModelPresetsPage } from './routes/model-presets'
 import { PluginConfigPage } from './routes/plugin-config'
 import { PluginMirrorsPage } from './routes/plugin-mirrors'
 import { ChatPage } from './routes/chat'
@@ -157,6 +158,13 @@ const pluginsRoute = createRoute({
   component: PluginsPage,
 })
 
+// 模型分配预设市场路由
+const modelPresetsRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/model-presets',
+  component: ModelPresetsPage,
+})
+
 // 插件配置路由
 const pluginConfigRoute = createRoute({
   getParentRoute: () => protectedRoute,
@@ -215,6 +223,7 @@ const routeTree = rootRoute.addChildren([
     personManagementRoute,
     knowledgeGraphRoute,
     pluginsRoute,
+    modelPresetsRoute,
     pluginConfigRoute,
     pluginMirrorsRoute,
     logsRoute,

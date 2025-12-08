@@ -360,7 +360,6 @@ export function JargonManagementPage() {
                     <SelectItem value="all">全部状态</SelectItem>
                     <SelectItem value="true">是黑话</SelectItem>
                     <SelectItem value="false">非黑话</SelectItem>
-                    <SelectItem value="null">未判定</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
