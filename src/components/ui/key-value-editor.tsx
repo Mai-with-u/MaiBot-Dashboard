@@ -18,6 +18,15 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
+// 生成唯一 ID 的辅助函数，兼容不支持 crypto.randomUUID 的环境
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  // Fallback: 使用时间戳 + 随机数生成唯一 ID
+  return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 11)}`
+}
+
 type ValueType = 'string' | 'number' | 'boolean'
 
 interface KeyValuePair {
@@ -58,7 +67,7 @@ function convertValue(value: string, type: ValueType): string | number | boolean
 // 将 Record 转换为 KeyValuePair 数组
 function recordToPairs(record: Record<string, unknown>): KeyValuePair[] {
   return Object.entries(record).map(([key, value]) => ({
-    id: crypto.randomUUID(),
+    id: generateId(),
     key,
     value: value as string | number | boolean,
     type: inferType(value),
@@ -167,7 +176,7 @@ export function KeyValueEditor({
   // 添加新的键值对
   const addPair = useCallback(() => {
     const newPair: KeyValuePair = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       key: '',
       value: '',
       type: 'string',
