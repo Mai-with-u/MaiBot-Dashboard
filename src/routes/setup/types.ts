@@ -37,10 +37,7 @@ export interface EmojiConfig {
 // 步骤4：其他基础配置
 export interface OtherBasicConfig {
   enable_tool: boolean
-  enable_mood: boolean
-  mood_update_threshold?: number
-  emotion_style?: string
-  all_global: boolean
+  all_global: boolean // 全局黑话模式（expression.all_global_jargon）
 }
 
 // 步骤5：硅基流动API配置

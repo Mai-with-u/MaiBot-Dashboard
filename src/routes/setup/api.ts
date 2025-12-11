@@ -95,15 +95,11 @@ export async function loadOtherBasicConfig(): Promise<OtherBasicConfig> {
   const config = data.config
 
   const toolConfig = config.tool || {}
-  const moodConfig = config.mood || {}
-  const jargonConfig = config.jargon || {}
+  const expressionConfig = config.expression || {}
 
   return {
     enable_tool: toolConfig.enable_tool ?? true,
-    enable_mood: moodConfig.enable_mood ?? false,
-    mood_update_threshold: moodConfig.mood_update_threshold,
-    emotion_style: moodConfig.emotion_style,
-    all_global: jargonConfig.all_global ?? true,
+    all_global: expressionConfig.all_global_jargon ?? true,
   }
 }
 
@@ -196,26 +192,12 @@ export async function saveOtherBasicConfig(config: OtherBasicConfig) {
     })
   )
 
-  // 保存jargon配置
+  // 保存expression配置中的all_global_jargon
   promises.push(
-    fetchWithAuth('/api/webui/config/bot/section/jargon', {
+    fetchWithAuth('/api/webui/config/bot/section/expression', {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ all_global: config.all_global }),
-    })
-  )
-
-  // 保存mood配置
-  const moodConfig: Record<string, unknown> = { enable_mood: config.enable_mood }
-  if (config.enable_mood) {
-    moodConfig.mood_update_threshold = config.mood_update_threshold || 1
-    moodConfig.emotion_style = config.emotion_style || ''
-  }
-  promises.push(
-    fetchWithAuth('/api/webui/config/bot/section/mood', {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(moodConfig),
+      body: JSON.stringify({ all_global_jargon: config.all_global }),
     })
   )
 

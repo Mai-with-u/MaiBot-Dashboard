@@ -102,9 +102,6 @@ export function SetupPage() {
   // 步骤4：其他基础配置
   const [otherBasic, setOtherBasic] = useState<OtherBasicConfig>({
     enable_tool: true,
-    enable_mood: false,
-    mood_update_threshold: 1,
-    emotion_style: '情绪较为稳定，但遇遇特定事件的时候起伏较大',
     all_global: true,
   })
 
