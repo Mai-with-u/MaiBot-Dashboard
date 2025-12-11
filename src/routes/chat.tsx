@@ -127,12 +127,21 @@ interface ChatTab {
   }
 }
 
+// 消息段类型
+interface MessageSegment {
+  type: 'text' | 'image' | 'emoji' | 'face' | 'voice' | 'video' | 'music' | 'file' | 'reply' | 'forward' | 'unknown'
+  data: string | number | object
+  original_type?: string
+}
+
 // 消息类型
 interface ChatMessage {
   id: string
   type: 'user' | 'bot' | 'system' | 'error' | 'thinking'
   content: string
   timestamp: number
+  message_type?: 'text' | 'rich'  // 消息格式类型
+  segments?: MessageSegment[]  // 富文本消息段
   sender?: {
     name: string
     user_id?: string
@@ -166,6 +175,102 @@ interface WsMessage {
     is_bot?: boolean
   }>
   group_id?: string
+  // 富文本消息
+  message_type?: string
+  segments?: MessageSegment[]
+}
+
+// 渲染单个消息段
+function RenderMessageSegment({ segment }: { segment: MessageSegment }) {
+  switch (segment.type) {
+    case 'text':
+      return <span className="whitespace-pre-wrap">{String(segment.data)}</span>
+    
+    case 'image':
+    case 'emoji':
+      return (
+        <img 
+          src={String(segment.data)} 
+          alt={segment.type === 'emoji' ? '表情包' : '图片'}
+          className={cn(
+            "rounded-lg max-w-full",
+            segment.type === 'emoji' ? "max-h-32" : "max-h-64"
+          )}
+          loading="lazy"
+          onError={(e) => {
+            // 图片加载失败时显示占位符
+            const target = e.target as HTMLImageElement
+            target.style.display = 'none'
+            target.parentElement?.insertAdjacentHTML(
+              'beforeend',
+              `<span class="text-muted-foreground text-xs">[${segment.type === 'emoji' ? '表情包' : '图片'}加载失败]</span>`
+            )
+          }}
+        />
+      )
+    
+    case 'voice':
+      return (
+        <div className="flex items-center gap-2">
+          <audio 
+            controls 
+            src={String(segment.data)} 
+            className="max-w-[200px] h-8"
+          >
+            您的浏览器不支持音频播放
+          </audio>
+        </div>
+      )
+    
+    case 'video':
+      return (
+        <video 
+          controls 
+          src={String(segment.data)} 
+          className="rounded-lg max-w-full max-h-64"
+        >
+          您的浏览器不支持视频播放
+        </video>
+      )
+    
+    case 'face':
+      // QQ 原生表情，显示为文本
+      return <span className="text-muted-foreground">[表情:{String(segment.data)}]</span>
+    
+    case 'music':
+      return <span className="text-muted-foreground">[音乐分享]</span>
+    
+    case 'file':
+      return <span className="text-muted-foreground">[文件: {String(segment.data)}]</span>
+    
+    case 'reply':
+      return <span className="text-muted-foreground text-xs">[回复消息]</span>
+    
+    case 'forward':
+      return <span className="text-muted-foreground">[转发消息]</span>
+    
+    case 'unknown':
+    default:
+      return <span className="text-muted-foreground">[{segment.original_type || '未知消息'}]</span>
+  }
+}
+
+// 渲染消息内容（支持富文本）
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function RenderMessageContent({ message, isBot: _isBot }: { message: ChatMessage; isBot: boolean }) {
+  // 如果是富文本消息，渲染消息段
+  if (message.message_type === 'rich' && message.segments && message.segments.length > 0) {
+    return (
+      <div className="flex flex-col gap-2">
+        {message.segments.map((segment, index) => (
+          <RenderMessageSegment key={index} segment={segment} />
+        ))}
+      </div>
+    )
+  }
+  
+  // 普通文本消息
+  return <span className="whitespace-pre-wrap">{message.content}</span>
 }
 
 export function ChatPage() {
@@ -217,7 +322,6 @@ export function ChatPage() {
   const [userName, setUserName] = useState(getStoredUserName())
   const [isEditingName, setIsEditingName] = useState(false)
   const [tempUserName, setTempUserName] = useState('')
-  const [isWaitingResponse, setIsWaitingResponse] = useState(false)  // 等待后端响应，禁止连续发送
   
   // 虚拟身份配置对话框状态
   const [showVirtualConfig, setShowVirtualConfig] = useState(false)
@@ -490,9 +594,31 @@ export function ChatPage() {
                 ? config.userId 
                 : userIdRef.current
               
+              console.log(`[Tab ${tabId}] 收到 user_message, sender: ${senderUserId}, current: ${currentUserId}`)
+              
+              // 标准化 user_id（去掉可能的前缀）
+              const normalizeSenderId = senderUserId ? senderUserId.replace(/^webui_user_/, '') : ''
+              const normalizeCurrentId = currentUserId ? currentUserId.replace(/^webui_user_/, '') : ''
+              
               // 如果是自己发的消息，跳过（避免重复显示）
-              if (senderUserId === currentUserId) {
+              if (normalizeSenderId && normalizeCurrentId && normalizeSenderId === normalizeCurrentId) {
+                console.log(`[Tab ${tabId}] 跳过自己的消息（user_id 匹配）`)
                 break
+              }
+              
+              // 额外的消息去重：检查内容和时间戳
+              const processedSet = processedMessagesMapRef.current.get(tabId) || new Set()
+              const contentHash = `user-${data.content}-${Math.floor((data.timestamp || 0) * 1000)}`
+              if (processedSet.has(contentHash)) {
+                console.log(`[Tab ${tabId}] 跳过自己的消息（内容去重）`)
+                break
+              }
+              processedSet.add(contentHash)
+              processedMessagesMapRef.current.set(tabId, processedSet)
+              
+              if (processedSet.size > 100) {
+                const firstKey = processedSet.values().next().value
+                if (firstKey) processedSet.delete(firstKey)
               }
               
               addMessageToTab(tabId, {
@@ -507,8 +633,6 @@ export function ChatPage() {
 
             case 'bot_message': {
               updateTab(tabId, { isTyping: false })
-              // 收到机器人响应，允许继续发送消息
-              setIsWaitingResponse(false)
               const processedSet = processedMessagesMapRef.current.get(tabId) || new Set()
               const contentHash = `bot-${data.content}-${Math.floor((data.timestamp || 0) * 1000)}`
               if (processedSet.has(contentHash)) {
@@ -527,15 +651,18 @@ export function ChatPage() {
                 if (tab.id !== tabId) return tab
                 // 过滤掉 thinking 类型的消息
                 const filteredMessages = tab.messages.filter(msg => msg.type !== 'thinking')
+                const newMessage: ChatMessage = {
+                  id: generateMessageId('bot'),
+                  type: 'bot',
+                  content: data.content || '',
+                  message_type: (data.message_type === 'rich' ? 'rich' : 'text') as 'text' | 'rich',
+                  segments: data.segments as MessageSegment[] | undefined,
+                  timestamp: data.timestamp || Date.now() / 1000,
+                  sender: data.sender,
+                }
                 return {
                   ...tab,
-                  messages: [...filteredMessages, {
-                    id: generateMessageId('bot'),
-                    type: 'bot' as const,
-                    content: data.content || '',
-                    timestamp: data.timestamp || Date.now() / 1000,
-                    sender: data.sender,
-                  }]
+                  messages: [...filteredMessages, newMessage]
                 }
               }))
               break
@@ -546,8 +673,6 @@ export function ChatPage() {
               break
 
             case 'error':
-              // 收到错误响应，允许继续发送消息
-              setIsWaitingResponse(false)
               // 移除"思考中"占位消息，显示错误
               setTabs(prev => prev.map(tab => {
                 if (tab.id !== tabId) return tab
@@ -720,13 +845,9 @@ export function ChatPage() {
   // 发送消息到当前活动标签页
   const sendMessage = useCallback(() => {
     const ws = wsMapRef.current.get(activeTabId)
-    // 禁止在等待响应时发送新消息
-    if (!inputValue.trim() || !ws || ws.readyState !== WebSocket.OPEN || isWaitingResponse) {
+    if (!inputValue.trim() || !ws || ws.readyState !== WebSocket.OPEN) {
       return
     }
-
-    // 设置等待状态，禁止连续发送
-    setIsWaitingResponse(true)
 
     const displayName = activeTab?.type === 'virtual' 
       ? activeTab.virtualConfig?.userName || userName
@@ -740,6 +861,17 @@ export function ChatPage() {
       content: messageContent,
       user_name: displayName,
     }))
+
+    // 添加到去重缓存，防止服务器广播回来的消息重复显示
+    const processedSet = processedMessagesMapRef.current.get(activeTabId) || new Set()
+    const contentHash = `user-${messageContent}-${Math.floor(currentTimestamp * 1000)}`
+    processedSet.add(contentHash)
+    processedMessagesMapRef.current.set(activeTabId, processedSet)
+    
+    if (processedSet.size > 100) {
+      const firstKey = processedSet.values().next().value
+      if (firstKey) processedSet.delete(firstKey)
+    }
 
     // 先添加用户消息（立即显示）
     const userMessage: ChatMessage = {
@@ -768,7 +900,7 @@ export function ChatPage() {
     addMessageToTab(activeTabId, thinkingMessage)
 
     setInputValue('')
-  }, [inputValue, userName, activeTabId, activeTab, addMessageToTab, isWaitingResponse])
+  }, [inputValue, userName, activeTabId, activeTab, addMessageToTab])
 
   // 处理键盘事件
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -1124,16 +1256,16 @@ export function ChatPage() {
         <div className="max-w-4xl mx-auto px-2 sm:px-4">
           <div className="flex items-center gap-1 overflow-x-auto py-1.5 scrollbar-thin">
             {tabs.map((tab) => (
-              <button
+              <div
                 key={tab.id}
-                onClick={() => switchTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm whitespace-nowrap transition-colors",
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm whitespace-nowrap transition-colors cursor-pointer",
                   "hover:bg-muted",
                   activeTabId === tab.id
                     ? "bg-background shadow-sm border"
                     : "text-muted-foreground"
                 )}
+                onClick={() => switchTab(tab.id)}
               >
                 {tab.type === 'webui' ? (
                   <MessageSquare className="h-3.5 w-3.5" />
@@ -1148,14 +1280,22 @@ export function ChatPage() {
                 )} />
                 {/* 关闭按钮（非默认标签页） */}
                 {tab.id !== 'webui-default' && (
-                  <button
+                  <span
                     onClick={(e) => closeTab(tab.id, e)}
-                    className="ml-0.5 p-0.5 rounded hover:bg-muted-foreground/20"
+                    className="ml-0.5 p-0.5 rounded hover:bg-muted-foreground/20 cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        closeTab(tab.id, e as any)
+                      }
+                    }}
                   >
                     <X className="h-3 w-3" />
-                  </button>
+                  </span>
                 )}
-              </button>
+              </div>
             ))}
             {/* 新建虚拟身份标签页按钮 */}
             <button
@@ -1374,13 +1514,13 @@ export function ChatPage() {
                       </div>
                       <div
                         className={cn(
-                          'rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words',
+                          'rounded-2xl px-3 py-2 text-sm break-words',
                           message.type === 'bot'
                             ? 'bg-muted rounded-tl-sm'
                             : 'bg-primary text-primary-foreground rounded-tr-sm'
                         )}
                       >
-                        {message.content}
+                        <RenderMessageContent message={message} isBot={message.type === 'bot'} />
                       </div>
                     </div>
                   </>
@@ -1401,17 +1541,17 @@ export function ChatPage() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isWaitingResponse ? '等待响应中...' : (activeTab?.isConnected ? '输入消息...' : '等待连接...')}
-              disabled={!activeTab?.isConnected || isWaitingResponse}
+              placeholder={activeTab?.isConnected ? '输入消息...' : '等待连接...'}
+              disabled={!activeTab?.isConnected}
               className="flex-1 h-10 sm:h-10"
             />
             <Button
               onClick={sendMessage}
-              disabled={!activeTab?.isConnected || !inputValue.trim() || isWaitingResponse}
+              disabled={!activeTab?.isConnected || !inputValue.trim()}
               size="icon"
               className="h-10 w-10 shrink-0"
             >
-              {isWaitingResponse ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              <Send className="h-4 w-4" />
             </Button>
           </div>
         </div>
