@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Info, Upload, Download, FileText, Trash2, FolderOpen, Save, RefreshCw, AlertCircle, Package } from 'lucide-react'
+import { Info, Upload, Download, FileText, Trash2, FolderOpen, Save, RefreshCw, AlertCircle, Package, ChevronDown } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import {
   Select,
   SelectContent,
@@ -56,6 +61,7 @@ export function AdapterConfigPage() {
   const [showModeSwitchDialog, setShowModeSwitchDialog] = useState(false)
   const [showClearPathDialog, setShowClearPathDialog] = useState(false)
   const [pendingMode, setPendingMode] = useState<'upload' | 'path' | 'preset' | null>(null)
+  const [isModeConfigOpen, setIsModeConfigOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const saveTimeoutRef = useRef<number | null>(null)
@@ -400,11 +406,25 @@ export function AdapterConfigPage() {
         </div>
 
         {/* 模式选择 */}
+        <Collapsible open={isModeConfigOpen} onOpenChange={setIsModeConfigOpen}>
         <Card>
           <CardHeader>
-            <CardTitle>工作模式</CardTitle>
-            <CardDescription>选择配置文件的管理方式</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>工作模式</CardTitle>
+                <CardDescription>选择配置文件的管理方式</CardDescription>
+              </div>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="w-9 p-0">
+                  <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${
+                    isModeConfigOpen ? 'transform rotate-180' : ''
+                  }`} />
+                  <span className="sr-only">切换</span>
+                </Button>
+              </CollapsibleTrigger>
+            </div>
           </CardHeader>
+          <CollapsibleContent>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
               {/* 预设模式 */}
@@ -582,7 +602,9 @@ export function AdapterConfigPage() {
               </div>
             )}
           </CardContent>
+          </CollapsibleContent>
         </Card>
+        </Collapsible>
 
         {/* 操作提示 */}
         <Alert>
