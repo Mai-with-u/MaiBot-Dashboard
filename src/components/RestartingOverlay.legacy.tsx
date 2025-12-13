@@ -2,11 +2,19 @@ import { useEffect, useState } from 'react'
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 
+/**
+ * @deprecated 请使用新的 RestartOverlay 组件
+ * import { RestartOverlay } from '@/components/restart-overlay'
+ */
 interface RestartingOverlayProps {
   onRestartComplete?: () => void
   onRestartFailed?: () => void
 }
 
+/**
+ * @deprecated 请使用新的 RestartOverlay 组件
+ * import { RestartOverlay } from '@/components/restart-overlay'
+ */
 export function RestartingOverlay({ onRestartComplete, onRestartFailed }: RestartingOverlayProps) {
   const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState<'restarting' | 'checking' | 'success' | 'failed'>('restarting')

@@ -46,7 +46,17 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Link } from '@tanstack/react-router'
-import { useToast } from '@/hooks/use-toast'
+import { RestartProvider, useRestart } from '@/lib/restart-context'
+import { RestartOverlay } from '@/components/restart-overlay'
+
+// 主导出组件：包装 RestartProvider
+export function IndexPage() {
+  return (
+    <RestartProvider>
+      <IndexPageContent />
+    </RestartProvider>
+  )
+}
 
 // 机器人状态接口
 interface BotStatus {
@@ -112,7 +122,8 @@ const generatePieColors = (count: number): string[] => {
   return colors
 }
 
-export function IndexPage() {
+// 内部实现组件
+function IndexPageContent() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
@@ -121,8 +132,7 @@ export function IndexPage() {
   const [hitokoto, setHitokoto] = useState<{ hitokoto: string; from: string } | null>(null)
   const [hitokotoLoading, setHitokotoLoading] = useState(true)
   const [botStatus, setBotStatus] = useState<BotStatus | null>(null)
-  const [restarting, setRestarting] = useState(false)
-  const { toast } = useToast()
+  const { triggerRestart, isRestarting } = useRestart()
 
   // 获取一言
   const fetchHitokoto = useCallback(async () => {
@@ -160,32 +170,7 @@ export function IndexPage() {
 
   // 重启机器人
   const handleRestart = async () => {
-    if (restarting) return
-    
-    try {
-      setRestarting(true)
-      const token = localStorage.getItem('access-token')
-      await axios.post('/api/webui/system/restart', {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      toast({
-        title: '重启中',
-        description: '麦麦正在重启，请稍候...',
-      })
-      // 3秒后刷新状态
-      setTimeout(() => {
-        fetchBotStatus()
-        setRestarting(false)
-      }, 3000)
-    } catch (error) {
-      console.error('重启失败:', error)
-      toast({
-        title: '重启失败',
-        description: '无法重启麦麦，请检查控制台',
-        variant: 'destructive',
-      })
-      setRestarting(false)
-    }
+    await triggerRestart()
   }
 
   const fetchDashboardData = useCallback(async () => {
@@ -476,11 +461,11 @@ export function IndexPage() {
                 variant="outline"
                 size="sm"
                 onClick={handleRestart}
-                disabled={restarting}
+                disabled={isRestarting}
                 className="gap-2"
               >
-                <RotateCcw className={`h-4 w-4 ${restarting ? 'animate-spin' : ''}`} />
-                {restarting ? '重启中...' : '重启麦麦'}
+                <RotateCcw className={`h-4 w-4 ${isRestarting ? 'animate-spin' : ''}`} />
+                {isRestarting ? '重启中...' : '重启麦麦'}
               </Button>
               <Button variant="outline" size="sm" asChild className="gap-2">
                 <Link to="/logs">
@@ -970,6 +955,9 @@ export function IndexPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* 重启遮罩层 */}
+      <RestartOverlay />
     </div>
     </ScrollArea>
   )

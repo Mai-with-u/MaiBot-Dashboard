@@ -27,11 +27,11 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Save, Power, Code2, Layout } from 'lucide-react'
 import { getBotConfig, updateBotConfig, getBotConfigRaw, updateBotConfigRaw } from '@/lib/config-api'
-import { restartMaiBot } from '@/lib/system-api'
 import { useToast } from '@/hooks/use-toast'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Info } from 'lucide-react'
-import { RestartingOverlay } from '@/components/RestartingOverlay'
+import { RestartOverlay } from '@/components/restart-overlay'
+import { RestartProvider, useRestart } from '@/lib/restart-context'
 import { CodeEditor } from '@/components'
 
 // 导入模块化的类型定义
@@ -65,17 +65,26 @@ import { Button } from '@/components/ui/button'
 /** Toast 显示前的延迟时间 (毫秒) */
 const TOAST_DISPLAY_DELAY = 500
 
+// 主导出组件：包装 RestartProvider
 export function BotConfigPage() {
+  return (
+    <RestartProvider>
+      <BotConfigPageContent />
+    </RestartProvider>
+  )
+}
+
+// 内部实现组件
+function BotConfigPageContent() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [autoSaving, setAutoSaving] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const [restarting, setRestarting] = useState(false)
-  const [showRestartOverlay, setShowRestartOverlay] = useState(false)
   const [editMode, setEditMode] = useState<'visual' | 'source'>('visual')
   const [sourceCode, setSourceCode] = useState<string>('')
   const [hasTomlError, setHasTomlError] = useState(false)
   const { toast } = useToast()
+  const { triggerRestart, isRestarting } = useRestart()
 
   // 配置状态
   const [botConfig, setBotConfig] = useState<BotConfig | null>(null)
@@ -343,24 +352,7 @@ export function BotConfigPage() {
 
   // 重启麦麦
   const handleRestart = async () => {
-    try {
-      setRestarting(true)
-      // 发送重启请求（不等待响应，因为服务器会立即关闭）
-      restartMaiBot().catch(() => {
-        // 忽略网络错误，这是预期行为
-      })
-      // 立即显示遮罩层并开始状态检测
-      setShowRestartOverlay(true)
-    } catch (error) {
-      console.error('重启失败:', error)
-      setShowRestartOverlay(false)
-      toast({
-        title: '重启失败',
-        description: '无法发送重启请求，请手动重启',
-        variant: 'destructive',
-      })
-      setRestarting(false)
-    }
+    await triggerRestart()
   }
 
   // 保存并重启
@@ -391,24 +383,6 @@ export function BotConfigPage() {
     }
   }
 
-  // 重启完成回调
-  const handleRestartComplete = () => {
-    // 清除token，避免自动登录
-    localStorage.removeItem('access-token')
-    window.location.href = '/auth'
-  }
-
-  // 重启失败回调
-  const handleRestartFailed = () => {
-    setShowRestartOverlay(false)
-    setRestarting(false)
-    toast({
-      title: '重启失败',
-      description: '服务器未能在预期时间内恢复，请手动检查',
-      variant: 'destructive',
-    })
-  }
-
   if (loading) {
     return (
       <ScrollArea className="h-full">
@@ -435,7 +409,7 @@ export function BotConfigPage() {
             <div className="flex gap-2 flex-shrink-0">
               <Button
                 onClick={editMode === 'visual' ? saveConfig : saveSourceCode}
-                disabled={saving || autoSaving || !hasUnsavedChanges || restarting}
+                disabled={saving || autoSaving || !hasUnsavedChanges || isRestarting}
                 size="sm"
                 variant="outline"
                 className="w-20 sm:w-24"
@@ -448,13 +422,13 @@ export function BotConfigPage() {
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
-                    disabled={saving || autoSaving || restarting}
+                    disabled={saving || autoSaving || isRestarting}
                     size="sm"
                     className="w-20 sm:w-28"
                   >
                     <Power className="h-4 w-4 flex-shrink-0" />
                     <span className="ml-1 truncate text-xs sm:text-sm">
-                      {restarting ? '重启中' : hasUnsavedChanges ? '保存重启' : '重启'}
+                      {isRestarting ? '重启中' : hasUnsavedChanges ? '保存重启' : '重启'}
                     </span>
                   </Button>
                 </AlertDialogTrigger>
@@ -632,12 +606,7 @@ export function BotConfigPage() {
         )}
 
         {/* 重启遮罩层 */}
-      {showRestartOverlay && (
-        <RestartingOverlay 
-          onRestartComplete={handleRestartComplete}
-          onRestartFailed={handleRestartFailed}
-        />
-      )}
+        <RestartOverlay />
       </div>
     </ScrollArea>
   )

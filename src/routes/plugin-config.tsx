@@ -43,8 +43,11 @@ import {
   Info,
   Eye,
   EyeOff,
+  RotateCw,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { RestartProvider, useRestart } from '@/lib/restart-context'
+import { RestartOverlay } from '@/components/restart-overlay'
 import {
   getInstalledPlugins,
   getPluginConfigSchema,
@@ -314,6 +317,7 @@ interface PluginConfigEditorProps {
 
 function PluginConfigEditor({ plugin, onBack }: PluginConfigEditorProps) {
   const { toast } = useToast()
+  const { triggerRestart, isRestarting } = useRestart()
   const [schema, setSchema] = useState<PluginConfigSchema | null>(null)
   const [config, setConfig] = useState<Record<string, unknown>>({})
   const [originalConfig, setOriginalConfig] = useState<Record<string, unknown>>({})
@@ -476,6 +480,15 @@ function PluginConfigEditor({ plugin, onBack }: PluginConfigEditorProps) {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => triggerRestart()}
+            disabled={isRestarting}
+          >
+            <RotateCw className={`h-4 w-4 mr-2 ${isRestarting ? 'animate-spin' : ''}`} />
+            重启麦麦
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleToggle}
           >
             <Power className="h-4 w-4 mr-2" />
@@ -588,8 +601,17 @@ function PluginConfigEditor({ plugin, onBack }: PluginConfigEditorProps) {
   )
 }
 
-// 主页面组件
+// 主页面组件 - 包装 RestartProvider
 export function PluginConfigPage() {
+  return (
+    <RestartProvider>
+      <PluginConfigPageContent />
+    </RestartProvider>
+  )
+}
+
+// 内部组件：实际内容
+function PluginConfigPageContent() {
   const { toast } = useToast()
   const [plugins, setPlugins] = useState<InstalledPlugin[]>([])
   const [loading, setLoading] = useState(true)
@@ -635,14 +657,17 @@ export function PluginConfigPage() {
   // 如果选中了插件，显示配置编辑器
   if (selectedPlugin) {
     return (
-      <ScrollArea className="h-full">
-        <div className="p-4 sm:p-6">
-          <PluginConfigEditor
-            plugin={selectedPlugin}
-            onBack={() => setSelectedPlugin(null)}
-          />
-        </div>
-      </ScrollArea>
+      <>
+        <ScrollArea className="h-full">
+          <div className="p-4 sm:p-6">
+            <PluginConfigEditor
+              plugin={selectedPlugin}
+              onBack={() => setSelectedPlugin(null)}
+            />
+          </div>
+        </ScrollArea>
+        <RestartOverlay />
+      </>
     )
   }
 

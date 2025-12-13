@@ -22,8 +22,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Search, Download, Star, ExternalLink, CheckCircle2, AlertCircle, Loader2, AlertTriangle, RefreshCw, Trash2, Settings2 } from 'lucide-react'
+import { Search, Download, Star, ExternalLink, CheckCircle2, AlertCircle, Loader2, AlertTriangle, RefreshCw, Trash2, Settings2, RotateCw, Info } from 'lucide-react'
 import type { PluginInfo } from '@/types/plugin'
+import { RestartProvider, useRestart } from '@/lib/restart-context'
+import { RestartOverlay } from '@/components/restart-overlay'
 import { 
   fetchPluginList, 
   checkGitStatus, 
@@ -58,8 +60,19 @@ const CATEGORY_NAMES: Record<string, string> = {
   'Other': '其他',
 }
 
+// 主导出组件：包装 RestartProvider
 export function PluginsPage() {
+  return (
+    <RestartProvider>
+      <PluginsPageContent />
+    </RestartProvider>
+  )
+}
+
+// 内部组件：实际内容
+function PluginsPageContent() {
   const navigate = useNavigate()
+  const { triggerRestart, isRestarting } = useRestart()
   const [selectedPlugin, setSelectedPlugin] = useState<PluginInfo | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
@@ -604,11 +617,33 @@ export function PluginsPage() {
             <h1 className="text-2xl sm:text-3xl font-bold">插件市场</h1>
             <p className="text-muted-foreground mt-2">浏览和管理麦麦的插件</p>
           </div>
-          <Button onClick={() => navigate({ to: '/plugin-mirrors' })}>
-            <Settings2 className="h-4 w-4 mr-2" />
-            配置镜像源
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => triggerRestart()}
+              disabled={isRestarting}
+            >
+              <RotateCw className={`h-4 w-4 mr-2 ${isRestarting ? 'animate-spin' : ''}`} />
+              重启麦麦
+            </Button>
+            <Button onClick={() => navigate({ to: '/plugin-mirrors' })}>
+              <Settings2 className="h-4 w-4 mr-2" />
+              配置镜像源
+            </Button>
+          </div>
         </div>
+
+        {/* 安装提示 */}
+        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900">
+          <CardContent className="py-3">
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4 text-blue-600 flex-shrink-0" />
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                安装、卸载或更新插件后，需要<span className="font-semibold">重启麦麦</span>才能使更改生效
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Git 状态警告 */}
         {gitStatus && !gitStatus.installed && (
@@ -743,19 +778,14 @@ export function PluginsPage() {
           </TabsList>
         </Tabs>
 
-        {/* 进度条 - 统一显示所有操作的进度 */}
-        {loadProgress && loadProgress.stage === 'loading' && (
+        {/* 进度条 - 仅显示插件清单加载进度 */}
+        {loadProgress && loadProgress.stage === 'loading' && loadProgress.operation === 'fetch' && (
           <Card className="p-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm font-medium">
-                    {loadProgress.operation === 'fetch' && '加载插件列表'}
-                    {loadProgress.operation === 'install' && `安装插件${loadProgress.plugin_id ? `: ${loadProgress.plugin_id}` : ''}`}
-                    {loadProgress.operation === 'uninstall' && `卸载插件${loadProgress.plugin_id ? `: ${loadProgress.plugin_id}` : ''}`}
-                    {loadProgress.operation === 'update' && `更新插件${loadProgress.plugin_id ? `: ${loadProgress.plugin_id}` : ''}`}
-                  </span>
+                  <span className="text-sm font-medium">加载插件列表</span>
                 </div>
                 <span className="text-sm font-medium">{loadProgress.progress}%</span>
               </div>
@@ -763,7 +793,7 @@ export function PluginsPage() {
               <div className="text-xs text-muted-foreground">
                 {loadProgress.message}
               </div>
-              {loadProgress.operation === 'fetch' && loadProgress.total_plugins > 0 && (
+              {loadProgress.total_plugins > 0 && (
                 <div className="text-xs text-muted-foreground text-center">
                   已加载 {loadProgress.loaded_plugins} / {loadProgress.total_plugins} 个插件
                 </div>
@@ -941,6 +971,80 @@ export function PluginsPage() {
                   )}
                 </div>
               </CardFooter>
+              {/* 安装/卸载/更新进度显示 - 在卡片下方 */}
+              {loadProgress && 
+                (loadProgress.stage === 'loading' || loadProgress.stage === 'success' || loadProgress.stage === 'error') && 
+                loadProgress.operation !== 'fetch' && 
+                loadProgress.plugin_id === plugin.id && (
+                <div className="px-6 pb-4 -mt-2">
+                  <div className={`space-y-2 p-3 rounded-lg border ${
+                    loadProgress.stage === 'success' 
+                      ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900' 
+                      : loadProgress.stage === 'error'
+                        ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900'
+                        : 'bg-muted/50'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {loadProgress.stage === 'loading' ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : loadProgress.stage === 'success' ? (
+                          <CheckCircle2 className="h-3 w-3 text-green-600" />
+                        ) : (
+                          <AlertCircle className="h-3 w-3 text-red-600" />
+                        )}
+                        <span className={`text-xs font-medium ${
+                          loadProgress.stage === 'success' 
+                            ? 'text-green-700 dark:text-green-300' 
+                            : loadProgress.stage === 'error'
+                              ? 'text-red-700 dark:text-red-300'
+                              : ''
+                        }`}>
+                          {loadProgress.stage === 'loading' ? (
+                            <>
+                              {loadProgress.operation === 'install' && '正在安装'}
+                              {loadProgress.operation === 'uninstall' && '正在卸载'}
+                              {loadProgress.operation === 'update' && '正在更新'}
+                            </>
+                          ) : loadProgress.stage === 'success' ? (
+                            <>
+                              {loadProgress.operation === 'install' && '安装完成'}
+                              {loadProgress.operation === 'uninstall' && '卸载完成'}
+                              {loadProgress.operation === 'update' && '更新完成'}
+                            </>
+                          ) : (
+                            <>
+                              {loadProgress.operation === 'install' && '安装失败'}
+                              {loadProgress.operation === 'uninstall' && '卸载失败'}
+                              {loadProgress.operation === 'update' && '更新失败'}
+                            </>
+                          )}
+                        </span>
+                      </div>
+                      {loadProgress.stage !== 'error' && (
+                        <span className={`text-xs font-medium ${
+                          loadProgress.stage === 'success' ? 'text-green-700 dark:text-green-300' : ''
+                        }`}>{loadProgress.progress}%</span>
+                      )}
+                    </div>
+                    {loadProgress.stage !== 'error' && (
+                      <Progress 
+                        value={loadProgress.progress} 
+                        className={`h-1.5 ${loadProgress.stage === 'success' ? '[&>div]:bg-green-500' : ''}`} 
+                      />
+                    )}
+                    <div className={`text-xs ${
+                      loadProgress.stage === 'success' 
+                        ? 'text-green-600 dark:text-green-400 truncate' 
+                        : loadProgress.stage === 'error'
+                          ? 'text-red-600 dark:text-red-400'
+                          : 'text-muted-foreground truncate'
+                    }`}>
+                      {loadProgress.stage === 'error' ? (loadProgress.error || loadProgress.message || '操作失败') : loadProgress.message}
+                    </div>
+                  </div>
+                </div>
+              )}
             </Card>
           ))}
           </div>
@@ -1222,6 +1326,9 @@ export function PluginsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* 重启遮罩层 */}
+        <RestartOverlay />
       </div>
     </ScrollArea>
   )

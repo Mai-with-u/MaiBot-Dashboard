@@ -31,16 +31,34 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
+import { Switch } from '@/components/ui/switch'
+import { Slider } from '@/components/ui/slider'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { GripVertical, Plus, Trash2, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ============ 类型定义 ============
 
 export interface ItemFieldDefinition {
+  /** 字段类型: "string" | "number" | "boolean" | "select" */
   type: string
   label?: string
   placeholder?: string
   default?: unknown
+  /** select 类型的选项 */
+  choices?: unknown[]
+  /** slider 类型的最小值 */
+  min?: number
+  /** slider 类型的最大值 */
+  max?: number
+  /** slider 类型的步进 */
+  step?: number
 }
 
 export interface ListFieldEditorProps {
@@ -199,34 +217,120 @@ function ObjectItemEditor({
     [value, onChange]
   )
 
-  return (
-    <Card className="p-3 space-y-2 bg-muted/30">
-      {Object.entries(fields).map(([fieldName, fieldDef]) => (
-        <div key={fieldName} className="space-y-1">
+  const renderField = (fieldName: string, fieldDef: ItemFieldDefinition) => {
+    const fieldValue = value?.[fieldName]
+
+    // boolean / switch
+    if (fieldDef.type === 'boolean' || fieldDef.type === 'switch') {
+      return (
+        <div className="flex items-center justify-between py-1">
           <Label className="text-xs text-muted-foreground">
             {fieldDef.label ?? fieldName}
           </Label>
-          {fieldDef.type === 'number' ? (
-            <Input
-              type="number"
-              value={(value?.[fieldName] as number) ?? fieldDef.default ?? ''}
-              onChange={(e) =>
-                handleFieldChange(fieldName, parseFloat(e.target.value) || 0)
-              }
-              placeholder={fieldDef.placeholder}
-              disabled={disabled}
-              className="h-8 text-sm"
-            />
-          ) : (
-            <Input
-              type="text"
-              value={(value?.[fieldName] as string) ?? fieldDef.default ?? ''}
-              onChange={(e) => handleFieldChange(fieldName, e.target.value)}
-              placeholder={fieldDef.placeholder}
-              disabled={disabled}
-              className="h-8 text-sm"
-            />
-          )}
+          <Switch
+            checked={Boolean(fieldValue ?? fieldDef.default)}
+            onCheckedChange={(checked) => handleFieldChange(fieldName, checked)}
+            disabled={disabled}
+          />
+        </div>
+      )
+    }
+
+    // slider (number with min/max)
+    if (fieldDef.type === 'slider' || (fieldDef.type === 'number' && fieldDef.min != null && fieldDef.max != null)) {
+      const numValue = (fieldValue as number) ?? (fieldDef.default as number) ?? fieldDef.min ?? 0
+      return (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <Label className="text-xs text-muted-foreground">
+              {fieldDef.label ?? fieldName}
+            </Label>
+            <span className="text-xs text-muted-foreground">{numValue}</span>
+          </div>
+          <Slider
+            value={[numValue]}
+            onValueChange={(v) => handleFieldChange(fieldName, v[0])}
+            min={fieldDef.min ?? 0}
+            max={fieldDef.max ?? 100}
+            step={fieldDef.step ?? 1}
+            disabled={disabled}
+            className="py-1"
+          />
+        </div>
+      )
+    }
+
+    // select
+    if (fieldDef.type === 'select' && fieldDef.choices) {
+      return (
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">
+            {fieldDef.label ?? fieldName}
+          </Label>
+          <Select
+            value={String(fieldValue ?? fieldDef.default ?? '')}
+            onValueChange={(v) => handleFieldChange(fieldName, v)}
+            disabled={disabled}
+          >
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue placeholder={fieldDef.placeholder ?? '请选择'} />
+            </SelectTrigger>
+            <SelectContent>
+              {fieldDef.choices.map((choice) => (
+                <SelectItem key={String(choice)} value={String(choice)}>
+                  {String(choice)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )
+    }
+
+    // number
+    if (fieldDef.type === 'number') {
+      return (
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">
+            {fieldDef.label ?? fieldName}
+          </Label>
+          <Input
+            type="number"
+            value={(fieldValue as number) ?? fieldDef.default ?? ''}
+            onChange={(e) =>
+              handleFieldChange(fieldName, parseFloat(e.target.value) || 0)
+            }
+            placeholder={fieldDef.placeholder}
+            disabled={disabled}
+            className="h-8 text-sm"
+          />
+        </div>
+      )
+    }
+
+    // string (default)
+    return (
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">
+          {fieldDef.label ?? fieldName}
+        </Label>
+        <Input
+          type="text"
+          value={(fieldValue as string) ?? fieldDef.default ?? ''}
+          onChange={(e) => handleFieldChange(fieldName, e.target.value)}
+          placeholder={fieldDef.placeholder}
+          disabled={disabled}
+          className="h-8 text-sm"
+        />
+      </div>
+    )
+  }
+
+  return (
+    <Card className="p-3 space-y-2 bg-muted/30">
+      {Object.entries(fields).map(([fieldName, fieldDef]) => (
+        <div key={fieldName}>
+          {renderField(fieldName, fieldDef)}
         </div>
       ))}
     </Card>
