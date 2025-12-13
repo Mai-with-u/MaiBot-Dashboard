@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { ListFieldEditor } from '@/components/ListFieldEditor'
 import {
   Select,
   SelectContent,
@@ -200,6 +201,26 @@ function FieldRenderer({ field, value, onChange }: FieldRendererProps) {
               )}
             </Button>
           </div>
+          {field.hint && (
+            <p className="text-xs text-muted-foreground">{field.hint}</p>
+          )}
+        </div>
+      )
+
+    case 'list':
+      return (
+        <div className="space-y-2">
+          <Label>{field.label}</Label>
+          <ListFieldEditor
+            value={Array.isArray(value) ? value : []}
+            onChange={(newValue) => onChange(newValue)}
+            itemType={field.item_type ?? 'string'}
+            itemFields={field.item_fields}
+            minItems={field.min_items}
+            maxItems={field.max_items}
+            disabled={field.disabled}
+            placeholder={field.placeholder}
+          />
           {field.hint && (
             <p className="text-xs text-muted-foreground">{field.hint}</p>
           )}

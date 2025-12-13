@@ -429,6 +429,16 @@ export async function updatePlugin(pluginId: string, repositoryUrl: string, bran
 // ============ 插件配置管理 ============
 
 /**
+ * 列表项字段定义（用于 object 类型的数组项）
+ */
+export interface ItemFieldDefinition {
+  type: string
+  label?: string
+  placeholder?: string
+  default?: unknown
+}
+
+/**
  * 配置字段定义
  */
 export interface ConfigFieldSchema {
@@ -457,6 +467,11 @@ export interface ConfigFieldSchema {
   group?: string
   depends_on?: string
   depends_value?: unknown
+  // 列表类型专用
+  item_type?: string  // "string" | "number" | "object"
+  item_fields?: Record<string, ItemFieldDefinition>
+  min_items?: number
+  max_items?: number
 }
 
 /**
