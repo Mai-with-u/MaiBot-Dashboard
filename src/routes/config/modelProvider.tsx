@@ -63,16 +63,8 @@ import { MODEL_ASSIGNMENT_TOUR_ID, modelAssignmentTourSteps, STEP_ROUTE_MAP } fr
 import { useNavigate } from '@tanstack/react-router'
 import { RestartingOverlay } from '@/components/RestartingOverlay'
 import { PROVIDER_TEMPLATES } from './providerTemplates'
-
-interface APIProvider {
-  name: string
-  base_url: string
-  api_key: string
-  client_type: string
-  max_retry: number | null
-  timeout: number | null
-  retry_interval: number | null
-}
+import type { APIProvider, DeleteConfirmState, FormErrors } from './modelProvider/types'
+import { cleanProviderData, validateProvider } from './modelProvider/utils'
 
 export function ModelProviderConfigPage() {
   const [providers, setProviders] = useState<APIProvider[]>([])
@@ -97,12 +89,18 @@ export function ModelProviderConfigPage() {
   const [pageSize, setPageSize] = useState(20)
   const [jumpToPage, setJumpToPage] = useState('')
   
+  // 删除提供商确认对话框状态（合并为单个对象以减少状态变量）
+  const [deleteConfirmState, setDeleteConfirmState] = useState<DeleteConfirmState>({
+    isOpen: false,
+    providersToDelete: [],
+    affectedModels: [],
+    pendingProviders: [],
+    context: 'auto',
+    oldProviders: [],
+  })
+  
   // 表单验证错误状态
-  const [formErrors, setFormErrors] = useState<{
-    name?: string
-    base_url?: string
-    api_key?: string
-  }>({})
+  const [formErrors, setFormErrors] = useState<FormErrors>({})
   
   // 测试连接状态
   const [testingProviders, setTestingProviders] = useState<Set<string>>(new Set())
@@ -238,8 +236,37 @@ export function ModelProviderConfigPage() {
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current)
       }
+      
+      // 清理 providers 数据：将 null 值转换为默认值
+      const cleanedProviders = providers.map(provider => ({
+        ...provider,
+        max_retry: provider.max_retry ?? 2,
+        timeout: provider.timeout ?? 30,
+        retry_interval: provider.retry_interval ?? 10,
+      }))
+      
+      // 检查删除提供商的影响
+      const { shouldProceed } = await checkDeleteProviderImpact(cleanedProviders, 'restart')
+      if (!shouldProceed) {
+        // 需要用户确认，等待确认对话框
+        setSaving(false)
+        return
+      }
+      
       const config = await getModelConfig()
-      config.api_providers = providers
+      
+      // 获取所有有效的 provider 名称
+      const validProviderNames = new Set(cleanedProviders.map(p => p.name))
+      
+      // 过滤掉引用已删除 provider 的模型
+      const originalModels = (config.models as any[]) || []
+      const filteredModels = originalModels.filter((model: any) => {
+        return validProviderNames.has(model.api_provider)
+      })
+      
+      config.api_providers = cleanedProviders
+      config.models = filteredModels
+      
       await updateModelConfig(config)
       setHasUnsavedChanges(false)
       toast({
@@ -276,22 +303,191 @@ export function ModelProviderConfigPage() {
     })
   }
 
+  // 检查删除提供商的影响
+  const checkDeleteProviderImpact = useCallback(async (
+    newProviders: APIProvider[], 
+    context: 'auto' | 'manual' | 'restart' = 'auto'
+  ) => {
+    try {
+      const config = await getModelConfig()
+      const oldProviderNames = new Set(providers.map(p => p.name))
+      const newProviderNames = new Set(newProviders.map(p => p.name))
+      
+      // 找出被删除的提供商
+      const deletedProviders = Array.from(oldProviderNames).filter(
+        name => !newProviderNames.has(name)
+      )
+      
+      if (deletedProviders.length === 0) {
+        // 没有删除提供商，直接保存
+        return { shouldProceed: true, providers: newProviders }
+      }
+      
+      // 检查受影响的模型
+      const models = (config.models as any[]) || []
+      const affected = models.filter((m: any) => 
+        deletedProviders.includes(m.api_provider)
+      )
+      
+      if (affected.length === 0) {
+        // 没有受影响的模型，直接删除
+        return { shouldProceed: true, providers: newProviders }
+      }
+      
+      // 有受影响的模型，需要用户确认
+      setDeleteConfirmState({
+        isOpen: true,
+        providersToDelete: deletedProviders,
+        affectedModels: affected,
+        pendingProviders: newProviders,
+        context,
+        oldProviders: [...providers],
+      })
+      
+      return { shouldProceed: false, providers: newProviders }
+    } catch (error) {
+      console.error('检查删除影响失败:', error)
+      return { shouldProceed: true, providers: newProviders }
+    }
+  }, [providers])
+  
+  // 确认删除提供商及其关联的模型
+  const handleConfirmDeleteProvider = async () => {
+    try {
+      const savingFlag = deleteConfirmState.context === 'auto' ? setAutoSaving : setSaving
+      savingFlag(true)
+      
+      setDeleteConfirmState(prev => ({ ...prev, isOpen: false }))
+      
+      const config = await getModelConfig()
+      
+      // 清理 providers 数据
+      const cleanedProviders = deleteConfirmState.pendingProviders.map(cleanProviderData)
+      
+      // 获取有效的 provider 名称
+      const validProviderNames = new Set(cleanedProviders.map(p => p.name))
+      
+      // 过滤掉引用已删除 provider 的模型
+      const originalModels = (config.models as any[]) || []
+      const filteredModels = originalModels.filter((model: any) => {
+        return validProviderNames.has(model.api_provider)
+      })
+      
+      // 获取被删除的模型名称
+      const deletedModelNames = new Set(
+        deleteConfirmState.affectedModels.map((m: any) => m.name)
+      )
+      
+      // 从任务配置中移除这些模型
+      const modelTaskConfig = config.model_task_config as any
+      if (modelTaskConfig) {
+        Object.keys(modelTaskConfig).forEach(taskName => {
+          const task = modelTaskConfig[taskName]
+          if (task && Array.isArray(task.model_list)) {
+            task.model_list = task.model_list.filter(
+              (modelName: string) => !deletedModelNames.has(modelName)
+            )
+          }
+        })
+      }
+      
+      // 更新配置
+      config.api_providers = cleanedProviders
+      config.models = filteredModels
+      config.model_task_config = modelTaskConfig
+      
+      await updateModelConfig(config)
+      
+      // 更新本地状态
+      setProviders(deleteConfirmState.pendingProviders)
+      setHasUnsavedChanges(false)
+      
+      toast({
+        title: '删除成功',
+        description: `已删除 ${deleteConfirmState.providersToDelete.length} 个提供商和 ${deleteConfirmState.affectedModels.length} 个关联模型`,
+      })
+      
+      // 清理状态
+      setDeleteConfirmState({
+        isOpen: false,
+        providersToDelete: [],
+        affectedModels: [],
+        pendingProviders: [],
+        context: 'auto',
+        oldProviders: [],
+      })
+      setSelectedProviders(new Set()) // 清除选中状态（批量删除时）
+      
+      // 根据上下文执行后续操作
+      if (deleteConfirmState.context === 'restart') {
+        // 如果是保存并重启，继续执行重启流程
+        await handleRestart()
+      }
+    } catch (error) {
+      console.error('删除失败:', error)
+      toast({
+        title: '删除失败',
+        description: (error as Error).message,
+        variant: 'destructive',
+      })
+    } finally {
+      if (deleteConfirmState.context === 'auto') {
+        setAutoSaving(false)
+      } else {
+        setSaving(false)
+      }
+    }
+  }
+  
+  // 取消删除提供商
+  const handleCancelDeleteProvider = () => {
+    // 恢复到删除前的 providers 状态
+    if (deleteConfirmState.oldProviders.length > 0) {
+      setProviders(deleteConfirmState.oldProviders)
+    }
+    // 清理状态
+    setDeleteConfirmState({
+      isOpen: false,
+      providersToDelete: [],
+      affectedModels: [],
+      pendingProviders: [],
+      context: 'auto',
+      oldProviders: [],
+    })
+    setHasUnsavedChanges(false)
+  }
+  
   // 自动保存函数（使用增量 API）
   const autoSaveProviders = useCallback(async (newProviders: APIProvider[]) => {
     if (initialLoadRef.current) return // 初始加载时不自动保存
     
+    // 检查删除影响
+    const { shouldProceed } = await checkDeleteProviderImpact(newProviders, 'auto')
+    
+    if (!shouldProceed) {
+      // 需要用户确认，对话框已打开
+      setHasUnsavedChanges(true)
+      return
+    }
+    
     try {
       setAutoSaving(true)
-      await updateModelConfigSection('api_providers', newProviders)
+      // 清理 providers 数据：将 null 值转换为默认值
+      const cleanedProviders = newProviders.map(cleanProviderData)
+      await updateModelConfigSection('api_providers', cleanedProviders)
       setHasUnsavedChanges(false)
     } catch (error) {
       console.error('自动保存失败:', error)
-      // 自动保存失败时不显示错误提示，避免打扰用户
+      toast({
+        title: '自动保存失败',
+        description: (error as Error).message,
+        variant: 'destructive',
+      })
       setHasUnsavedChanges(true)
     } finally {
       setAutoSaving(false)
     }
-  }, [])
+  }, [providers, checkDeleteProviderImpact])
 
   // 监听 providers 变化，触发自动保存（带防抖）
   useEffect(() => {
@@ -327,8 +523,47 @@ export function ModelProviderConfigPage() {
         clearTimeout(autoSaveTimerRef.current)
       }
 
+      // 清理 providers 数据：将 null 值转换为默认值
+      const cleanedProviders = providers.map(cleanProviderData)
+      
+      // 检查删除提供商的影响
+      const { shouldProceed } = await checkDeleteProviderImpact(cleanedProviders, 'manual')
+      if (!shouldProceed) {
+        // 需要用户确认，等待确认对话框
+        setSaving(false)
+        return
+      }
+
       const config = await getModelConfig()
-      config.api_providers = providers
+      
+      // 获取所有有效的 provider 名称
+      const validProviderNames = new Set(cleanedProviders.map(p => p.name))
+      
+      // 过滤掉引用已删除 provider 的模型
+      const originalModels = (config.models as any[]) || []
+      const filteredModels = originalModels.filter((model: any) => {
+        const isValid = validProviderNames.has(model.api_provider)
+        if (!isValid) {
+          console.warn(`模型 "${model.name}" 引用了已删除的提供商 "${model.api_provider}"，将被移除`)
+        }
+        return isValid
+      })
+      
+      // 如果有模型被移除，显示警告
+      if (originalModels.length !== filteredModels.length) {
+        const removedCount = originalModels.length - filteredModels.length
+        toast({
+          title: '注意',
+          description: `已自动移除 ${removedCount} 个引用已删除提供商的模型`,
+          variant: 'default',
+        })
+      }
+      
+      console.log('发送的 providers 数据:', cleanedProviders)
+      config.api_providers = cleanedProviders
+      config.models = filteredModels
+      console.log('完整配置数据:', config)
+      
       await updateModelConfig(config)
       setHasUnsavedChanges(false)
       toast({
@@ -378,7 +613,7 @@ export function ModelProviderConfigPage() {
   }
   
   // 处理模板选择变化
-  const handleTemplateChange = (templateId: string) => {
+  const handleTemplateChange = useCallback((templateId: string) => {
     setSelectedTemplate(templateId)
     setTemplateComboboxOpen(false)
     const template = PROVIDER_TEMPLATES.find(t => t.id === templateId)
@@ -399,7 +634,7 @@ export function ModelProviderConfigPage() {
         client_type: 'openai',
       }))
     }
-  }
+  }, [])
   
   // 判断当前是否使用模板(非自定义)
   const isUsingTemplate = useMemo(() => {
@@ -407,7 +642,7 @@ export function ModelProviderConfigPage() {
   }, [selectedTemplate])
 
   // 复制 API Key
-  const copyApiKey = async () => {
+  const copyApiKey = useCallback(async () => {
     if (!editingProvider?.api_key) return
     try {
       await navigator.clipboard.writeText(editingProvider.api_key)
@@ -422,25 +657,16 @@ export function ModelProviderConfigPage() {
         variant: 'destructive',
       })
     }
-  }
+  }, [editingProvider?.api_key, toast])
 
   // 保存编辑
   const handleSaveEdit = () => {
     if (!editingProvider) return
 
     // 验证必填项
-    const errors: { name?: string; base_url?: string; api_key?: string } = {}
-    if (!editingProvider.name?.trim()) {
-      errors.name = '请输入提供商名称'
-    }
-    if (!editingProvider.base_url?.trim()) {
-      errors.base_url = '请输入基础 URL'
-    }
-    if (!editingProvider.api_key?.trim()) {
-      errors.api_key = '请输入 API Key'
-    }
+    const { isValid, errors } = validateProvider(editingProvider)
 
-    if (Object.keys(errors).length > 0) {
+    if (!isValid) {
       setFormErrors(errors)
       return
     }
@@ -449,12 +675,7 @@ export function ModelProviderConfigPage() {
     setFormErrors({})
 
     // 填充空值的默认值
-    const providerToSave = {
-      ...editingProvider,
-      max_retry: editingProvider.max_retry ?? 2,
-      timeout: editingProvider.timeout ?? 30,
-      retry_interval: editingProvider.retry_interval ?? 10,
-    }
+    const providerToSave = cleanProviderData(editingProvider)
 
     if (editingIndex !== null) {
       // 更新现有提供商
@@ -493,14 +714,22 @@ export function ModelProviderConfigPage() {
   }
 
   // 确认删除提供商
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deletingIndex !== null) {
       const newProviders = providers.filter((_, i) => i !== deletingIndex)
-      setProviders(newProviders)
-      toast({
-        title: '删除成功',
-        description: '提供商已从列表中移除',
-      })
+      
+      // 检查删除影响
+      const { shouldProceed } = await checkDeleteProviderImpact(newProviders, 'manual')
+      
+      if (shouldProceed) {
+        // 没有影响，直接删除
+        setProviders(newProviders)
+        toast({
+          title: '删除成功',
+          description: '提供商已从列表中移除',
+        })
+      }
+      // 如果 shouldProceed = false，对话框会自动打开，等待用户确认
     }
     setDeleteDialogOpen(false)
     setDeletingIndex(null)
@@ -543,43 +772,55 @@ export function ModelProviderConfigPage() {
   }
 
   // 确认批量删除
-  const handleConfirmBatchDelete = () => {
+  const handleConfirmBatchDelete = async () => {
     const newProviders = providers.filter((_, index) => !selectedProviders.has(index))
-    setProviders(newProviders)
-    setSelectedProviders(new Set())
+    
+    // 检查删除影响
+    const { shouldProceed } = await checkDeleteProviderImpact(newProviders, 'manual')
+    
+    if (shouldProceed) {
+      // 没有影响，直接删除
+      setProviders(newProviders)
+      setSelectedProviders(new Set())
+      toast({
+        title: '批量删除成功',
+        description: `已删除 ${selectedProviders.size} 个提供商`,
+      })
+    }
+    // 如果 shouldProceed = false，对话框会自动打开，等待用户确认
+    
     setBatchDeleteDialogOpen(false)
-    toast({
-      title: '批量删除成功',
-      description: `已删除 ${selectedProviders.size} 个提供商`,
-    })
   }
 
-  // 过滤提供商列表
-  const filteredProviders = providers.filter((provider) => {
-    if (!searchQuery) return true
+  // 过滤提供商列表（使用 useMemo 优化性能）
+  const filteredProviders = useMemo(() => {
+    if (!searchQuery) return providers
     const query = searchQuery.toLowerCase()
-    return (
+    return providers.filter((provider) => (
       provider.name.toLowerCase().includes(query) ||
       provider.base_url.toLowerCase().includes(query) ||
       provider.client_type.toLowerCase().includes(query)
-    )
-  })
+    ))
+  }, [providers, searchQuery])
 
-  // 分页逻辑
-  const totalPages = Math.ceil(filteredProviders.length / pageSize)
-  const paginatedProviders = filteredProviders.slice(
-    (page - 1) * pageSize,
-    page * pageSize
-  )
+  // 分页逻辑（使用 useMemo 优化性能）
+  const { totalPages, paginatedProviders } = useMemo(() => {
+    const total = Math.ceil(filteredProviders.length / pageSize)
+    const paginated = filteredProviders.slice(
+      (page - 1) * pageSize,
+      page * pageSize
+    )
+    return { totalPages: total, paginatedProviders: paginated }
+  }, [filteredProviders, page, pageSize])
 
   // 页码跳转
-  const handleJumpToPage = () => {
+  const handleJumpToPage = useCallback(() => {
     const targetPage = parseInt(jumpToPage)
     if (targetPage >= 1 && targetPage <= totalPages) {
       setPage(targetPage)
       setJumpToPage('')
     }
-  }
+  }, [jumpToPage, totalPages])
 
   // 测试单个提供商连接
   const handleTestConnection = async (providerName: string) => {
@@ -1348,6 +1589,53 @@ export function ModelProviderConfigPage() {
             <AlertDialogCancel>取消</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmBatchDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               批量删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 删除提供商影响确认对话框 */}
+      <AlertDialog open={deleteConfirmState.isOpen} onOpenChange={(open) => setDeleteConfirmState(prev => ({ ...prev, isOpen: open }))}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除提供商</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  您即将删除以下提供商：
+                  <strong className="text-foreground ml-1">
+                    {deleteConfirmState.providersToDelete.join(', ')}
+                  </strong>
+                </p>
+                <p className="text-yellow-600 dark:text-yellow-500 font-medium">
+                  ⚠️ 此操作将同时删除 {deleteConfirmState.affectedModels.length} 个关联的模型：
+                </p>
+                <ScrollArea className="h-32 w-full rounded border p-3">
+                  <div className="space-y-1">
+                    {deleteConfirmState.affectedModels.map((model: any, idx: number) => (
+                      <div key={idx} className="text-sm">
+                        <span className="font-mono text-muted-foreground">•</span>
+                        <span className="ml-2 font-medium">{model.name}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          ({model.model_identifier})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+                <p className="text-sm text-muted-foreground">
+                  这些模型将从模型列表和所有任务分配中移除。此操作无法撤销。
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDeleteProvider}>取消</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDeleteProvider}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              确认删除
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
