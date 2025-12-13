@@ -172,7 +172,18 @@ export function BotConfigPage() {
   const loadSourceCode = useCallback(async () => {
     try {
       const raw = await getBotConfigRaw()
-      setSourceCode(raw)
+      // 将 TOML 基本字符串中的转义序列转换为实际字符以便在编辑器中正确显示
+      // 使用正则表达式只处理双引号字符串内的转义序列，不影响单引号字符串
+      const unescaped = raw.replace(/"([^"]*)"/g, (_match, content) => {
+        const decoded = content
+          .replace(/\\n/g, '\n')  // 换行符
+          .replace(/\\t/g, '\t')  // 制表符
+          .replace(/\\r/g, '\r')  // 回车符
+          .replace(/\\"/g, '"')   // 双引号
+          .replace(/\\\\/g, '\\') // 反斜杠（必须放在最后）
+        return `"${decoded}"`
+      })
+      setSourceCode(unescaped)
       setHasTomlError(false)
     } catch (error) {
       toast({
@@ -242,7 +253,18 @@ export function BotConfigPage() {
   const saveSourceCode = async () => {
     try {
       setSaving(true)
-      await updateBotConfigRaw(sourceCode)
+      // 将双引号字符串中的实际字符转换回 TOML 转义序列
+      // 使用正则表达式只处理双引号字符串内的内容，不影响单引号字符串
+      const escaped = sourceCode.replace(/"([^"]*)"/g, (_match, content) => {
+        const encoded = content
+          .replace(/\\/g, '\\\\') // 反斜杠（必须放在最前）
+          .replace(/"/g, '\\"')   // 双引号
+          .replace(/\n/g, '\\n')  // 换行符
+          .replace(/\t/g, '\\t')  // 制表符
+          .replace(/\r/g, '\\r')  // 回车符
+        return `"${encoded}"`
+      })
+      await updateBotConfigRaw(escaped)
       setHasUnsavedChanges(false)
       setHasTomlError(false)
       toast({

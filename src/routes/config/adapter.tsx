@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Info, Upload, Download, FileText, Trash2, FolderOpen, Save, RefreshCw, Package, Container, AlertCircle } from 'lucide-react'
+import { Info, Upload, Download, FileText, Trash2, FolderOpen, Save, RefreshCw, AlertCircle, Package } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
@@ -39,92 +39,9 @@ import {
   loadConfigFromPath,
   saveConfigToPath,
 } from '@/lib/adapter-config-api'
-
-interface AdapterConfig {
-  inner: {
-    version: string
-  }
-  nickname: {
-    nickname: string
-  }
-  napcat_server: {
-    host: string
-    port: number
-    token: string
-    heartbeat_interval: number
-  }
-  maibot_server: {
-    host: string
-    port: number
-  }
-  chat: {
-    group_list_type: 'whitelist' | 'blacklist'
-    group_list: number[]
-    private_list_type: 'whitelist' | 'blacklist'
-    private_list: number[]
-    ban_user_id: number[]
-    ban_qq_bot: boolean
-    enable_poke: boolean
-  }
-  voice: {
-    use_tts: boolean
-  }
-  debug: {
-    level: string
-  }
-}
-
-const DEFAULT_CONFIG: AdapterConfig = {
-  inner: {
-    version: '0.1.2',
-  },
-  nickname: {
-    nickname: '',
-  },
-  napcat_server: {
-    host: 'localhost',
-    port: 8095,
-    token: '',
-    heartbeat_interval: 30,
-  },
-  maibot_server: {
-    host: 'localhost',
-    port: 8000,
-  },
-  chat: {
-    group_list_type: 'whitelist',
-    group_list: [],
-    private_list_type: 'whitelist',
-    private_list: [],
-    ban_user_id: [],
-    ban_qq_bot: false,
-    enable_poke: true,
-  },
-  voice: {
-    use_tts: false,
-  },
-  debug: {
-    level: 'INFO',
-  },
-}
-
-// 预设配置
-const PRESETS = {
-  oneclick: {
-    name: '一键包',
-    description: '使用一键包部署的适配器配置',
-    path: '../MaiBot-Napcat-Adapter/config.toml',
-    icon: Package,
-  },
-  docker: {
-    name: 'Docker',
-    description: 'Docker Compose 部署的适配器配置',
-    path: '/MaiMBot/adapters-config/config.toml',
-    icon: Container,
-  },
-} as const
-
-type PresetKey = keyof typeof PRESETS
+import type { AdapterConfig, PresetKey } from './adapter/types'
+import { DEFAULT_CONFIG, PRESETS } from './adapter/types'
+import { parseTOML, generateTOML, validatePath } from './adapter/utils'
 
 export function AdapterConfigPage() {
   // 工作模式：'upload' = 上传文件模式, 'path' = 指定路径模式, 'preset' = 预设模式
@@ -142,45 +59,6 @@ export function AdapterConfigPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const saveTimeoutRef = useRef<number | null>(null)
-
-  // 验证路径格式
-  const validatePath = (path: string): { valid: boolean; error: string } => {
-    if (!path.trim()) {
-      return { valid: false, error: '路径不能为空' }
-    }
-
-    if (!path.toLowerCase().endsWith('.toml')) {
-      return { valid: false, error: '文件必须是 .toml 格式' }
-    }
-
-    // 支持相对路径和绝对路径
-    // Windows 绝对路径: C:\path\to\file.toml 或 \\server\share\file.toml
-    const windowsPathRegex = /^([a-zA-Z]:\\|\\\\[^\\]+\\[^\\]+\\).+\.toml$/i
-    // Linux/Unix 绝对路径: /path/to/file.toml 或 ~/path/to/file.toml
-    const unixPathRegex = /^(\/|~\/).+\.toml$/i
-    // 相对路径: ./path/to/file.toml 或 ../path/to/file.toml 或 path/to/file.toml
-    const relativePathRegex = /^(\.{1,2}[\\/]|[^:\\/]).+\.toml$/i
-
-    const isWindows = windowsPathRegex.test(path)
-    const isUnix = unixPathRegex.test(path)
-    const isRelative = relativePathRegex.test(path)
-
-    if (!isWindows && !isUnix && !isRelative) {
-      return {
-        valid: false,
-        error: '路径格式错误',
-      }
-    }
-
-    // 检查路径中是否包含非法字符
-    // eslint-disable-next-line no-control-regex
-    const illegalChars = /[<>"|?*\x00-\x1F]/
-    if (illegalChars.test(path)) {
-      return { valid: false, error: '路径包含非法字符' }
-    }
-
-    return { valid: true, error: '' }
-  }
 
   // 处理路径输入变化
   const handlePathChange = (value: string) => {
@@ -439,150 +317,6 @@ export function AdapterConfigPage() {
   const confirmClearPath = () => {
     performClearPath()
     setShowClearPathDialog(false)
-  }
-
-  // 解析 TOML 内容为配置对象
-  const parseTOML = (content: string): AdapterConfig => {
-    const config: AdapterConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG))
-    const lines = content.split('\n')
-    let currentSection = ''
-
-    for (const line of lines) {
-      const trimmed = line.trim()
-      if (!trimmed || trimmed.startsWith('#')) continue
-
-      // 检测节（支持带注释的节头）
-      const sectionMatch = trimmed.match(/^\[(\w+)\]/)
-      if (sectionMatch) {
-        currentSection = sectionMatch[1]
-        continue
-      }
-
-      // 解析键值对
-      const kvMatch = trimmed.match(/^(\w+)\s*=\s*(.+)$/)
-      if (kvMatch && currentSection) {
-        const [, key, value] = kvMatch
-        let cleanValue = value.trim()
-        
-        // 移除行内注释（处理所有情况）
-        // 1. 对于引号字符串: "value" # comment -> "value"
-        // 2. 对于数字/布尔值: 123 # comment -> 123
-        // 3. 对于数组: [1,2,3] # comment -> [1,2,3]
-        const quotedMatch = cleanValue.match(/^("[^"]*")/)
-        if (quotedMatch) {
-          // 引号字符串，只保留引号部分
-          cleanValue = quotedMatch[1]
-        } else {
-          // 非引号值，移除 # 及其后的所有内容
-          const commentIndex = cleanValue.indexOf('#')
-          if (commentIndex !== -1) {
-            cleanValue = cleanValue.substring(0, commentIndex).trim()
-          }
-        }
-
-        // 解析值
-        let parsedValue: string | number | boolean | number[]
-        if (cleanValue === 'true') {
-          parsedValue = true
-        } else if (cleanValue === 'false') {
-          parsedValue = false
-        } else if (cleanValue.startsWith('[') && cleanValue.endsWith(']')) {
-          // 解析数组
-          const arrayContent = cleanValue.slice(1, -1).trim()
-          if (arrayContent) {
-            const arrayValues = arrayContent.split(',').map((v) => {
-              const trimmedV = v.trim()
-              return isNaN(Number(trimmedV)) ? trimmedV.replace(/"/g, '') : Number(trimmedV)
-            })
-            // 确保数组类型一致（全部是数字或全部是字符串）
-            const firstType = typeof arrayValues[0]
-            parsedValue = arrayValues.every((v) => typeof v === firstType)
-              ? (arrayValues as number[])
-              : (arrayValues.filter((v) => typeof v === 'number') as number[])
-          } else {
-            parsedValue = []
-          }
-        } else if (cleanValue.startsWith('"') && cleanValue.endsWith('"')) {
-          parsedValue = cleanValue.slice(1, -1)
-        } else if (!isNaN(Number(cleanValue))) {
-          parsedValue = Number(cleanValue)
-        } else {
-          parsedValue = cleanValue.replace(/"/g, '')
-        }
-
-        // 设置到配置对象
-        if (currentSection in config) {
-          const section = config[currentSection as keyof AdapterConfig] as Record<string, unknown>
-          section[key] = parsedValue
-        }
-      }
-    }
-
-    return config
-  }
-
-  // 将配置对象转换为 TOML 格式（空值使用默认值填充）
-  const generateTOML = (config: AdapterConfig): string => {
-    const lines: string[] = []
-
-    // 填充默认值的辅助函数
-    const fillDefaults = (value: string | number, defaultValue: string | number): string | number => {
-      if (value === '' || value === null || value === undefined) {
-        return defaultValue
-      }
-      return value
-    }
-
-    // Inner section
-    lines.push('[inner]')
-    lines.push(`version = "${fillDefaults(config.inner.version, DEFAULT_CONFIG.inner.version)}" # 版本号`)
-    lines.push('# 请勿修改版本号，除非你知道自己在做什么')
-    lines.push('')
-
-    // Nickname section
-    lines.push('[nickname] # 现在没用')
-    lines.push(`nickname = "${fillDefaults(config.nickname.nickname, DEFAULT_CONFIG.nickname.nickname)}"`)
-    lines.push('')
-
-    // Napcat server section
-    lines.push('[napcat_server] # Napcat连接的ws服务设置')
-    lines.push(`host = "${fillDefaults(config.napcat_server.host, DEFAULT_CONFIG.napcat_server.host)}"      # Napcat设定的主机地址`)
-    lines.push(`port = ${fillDefaults(config.napcat_server.port || 0, DEFAULT_CONFIG.napcat_server.port)}             # Napcat设定的端口`)
-    lines.push(`token = "${fillDefaults(config.napcat_server.token, DEFAULT_CONFIG.napcat_server.token)}"              # Napcat设定的访问令牌，若无则留空`)
-    lines.push(`heartbeat_interval = ${fillDefaults(config.napcat_server.heartbeat_interval || 0, DEFAULT_CONFIG.napcat_server.heartbeat_interval)} # 与Napcat设置的心跳相同（按秒计）`)
-    lines.push('')
-
-    // MaiBot server section
-    lines.push('[maibot_server] # 连接麦麦的ws服务设置')
-    lines.push(`host = "${fillDefaults(config.maibot_server.host, DEFAULT_CONFIG.maibot_server.host)}" # 麦麦在.env文件中设置的主机地址，即HOST字段`)
-    lines.push(`port = ${fillDefaults(config.maibot_server.port || 0, DEFAULT_CONFIG.maibot_server.port)}        # 麦麦在.env文件中设置的端口，即PORT字段`)
-    lines.push('')
-
-    // Chat section
-    lines.push('[chat] # 黑白名单功能')
-    lines.push(`group_list_type = "${fillDefaults(config.chat.group_list_type, DEFAULT_CONFIG.chat.group_list_type)}" # 群组名单类型，可选为：whitelist, blacklist`)
-    lines.push(`group_list = [${config.chat.group_list.join(', ')}]               # 群组名单`)
-    lines.push('# 当group_list_type为whitelist时，只有群组名单中的群组可以聊天')
-    lines.push('# 当group_list_type为blacklist时，群组名单中的任何群组无法聊天')
-    lines.push(`private_list_type = "${fillDefaults(config.chat.private_list_type, DEFAULT_CONFIG.chat.private_list_type)}" # 私聊名单类型，可选为：whitelist, blacklist`)
-    lines.push(`private_list = [${config.chat.private_list.join(', ')}]               # 私聊名单`)
-    lines.push('# 当private_list_type为whitelist时，只有私聊名单中的用户可以聊天')
-    lines.push('# 当private_list_type为blacklist时，私聊名单中的任何用户无法聊天')
-    lines.push(`ban_user_id = [${config.chat.ban_user_id.join(', ')}]   # 全局禁止名单（全局禁止名单中的用户无法进行任何聊天）`)
-    lines.push(`ban_qq_bot = ${config.chat.ban_qq_bot} # 是否屏蔽QQ官方机器人`)
-    lines.push(`enable_poke = ${config.chat.enable_poke} # 是否启用戳一戳功能`)
-    lines.push('')
-
-    // Voice section
-    lines.push('[voice] # 发送语音设置')
-    lines.push(`use_tts = ${config.voice.use_tts} # 是否使用tts语音（请确保你配置了tts并有对应的adapter）`)
-    lines.push('')
-
-    // Debug section
-    lines.push('[debug]')
-    lines.push(`level = "${fillDefaults(config.debug.level, DEFAULT_CONFIG.debug.level)}" # 日志等级（DEBUG, INFO, WARNING, ERROR, CRITICAL）`)
-
-    return lines.join('\n')
   }
 
   // 上传文件处理
