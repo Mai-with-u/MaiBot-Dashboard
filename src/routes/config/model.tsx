@@ -46,13 +46,14 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Pencil, Trash2, Save, Search, Info, Power, Check, ChevronsUpDown, RefreshCw, Loader2, GraduationCap } from 'lucide-react'
+import { Plus, Pencil, Trash2, Save, Search, Info, Power, Check, ChevronsUpDown, RefreshCw, Loader2, GraduationCap, Share2 } from 'lucide-react'
 import { getModelConfig, updateModelConfig } from '@/lib/config-api'
 import { useToast } from '@/hooks/use-toast'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { RestartOverlay } from '@/components/restart-overlay'
 import { RestartProvider, useRestart } from '@/lib/restart-context'
 import { KeyValueEditor } from '@/components/ui/key-value-editor'
+import { SharePackDialog } from '@/components/share-pack-dialog'
 
 // 导入模块化的类型定义和组件
 import type { ModelInfo, ProviderConfig, ModelTaskConfig, TaskConfig } from './model/types'
@@ -531,6 +532,14 @@ function ModelConfigPageContent() {
             <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">添加模型并为模型分配功能</p>
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
+            <SharePackDialog 
+              trigger={
+                <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                  <Share2 className="mr-2 h-4 w-4" />
+                  分享配置
+                </Button>
+              }
+            />
             <Button 
               onClick={saveConfig} 
               disabled={saving || autoSaving || !hasUnsavedChanges || isRestarting} 

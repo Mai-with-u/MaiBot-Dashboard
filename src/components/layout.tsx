@@ -97,7 +97,7 @@ export function Layout({ children }: LayoutProps) {
       title: '扩展与监控',
       items: [
         { icon: Package, label: '插件市场', path: '/plugins' },
-        { icon: LayoutGrid, label: '模型分配预设市场', path: '/model-presets' },
+        { icon: LayoutGrid, label: '配置模板市场', path: '/config/pack-market' },
         { icon: Sliders, label: '插件配置', path: '/plugin-config' },
         { icon: FileSearch, label: '日志查看器', path: '/logs' },
         { icon: MessageSquare, label: '本地聊天室', path: '/chat' },

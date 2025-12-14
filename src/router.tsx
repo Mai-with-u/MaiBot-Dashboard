@@ -21,6 +21,8 @@ import { PluginConfigPage } from './routes/plugin-config'
 import { PluginMirrorsPage } from './routes/plugin-mirrors'
 import { ChatPage } from './routes/chat'
 import { WebUIFeedbackSurveyPage, MaiBotFeedbackSurveyPage } from './routes/survey'
+import PackMarketPage from './routes/config/pack-market'
+import PackDetailPage from './routes/config/pack-detail'
 import { Layout } from './components/layout'
 import { checkAuth } from './hooks/use-auth'
 import { RouteErrorBoundary } from './components/error-boundary'
@@ -186,6 +188,20 @@ const settingsRoute = createRoute({
   component: SettingsPage,
 })
 
+// 配置模板市场路由
+const packMarketRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/config/pack-market',
+  component: PackMarketPage,
+})
+
+// 配置模板详情路由
+export const packDetailRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/config/pack-market/$packId',
+  component: PackDetailPage,
+})
+
 // 问卷调查路由 - WebUI 反馈
 const webuiFeedbackSurveyRoute = createRoute({
   getParentRoute: () => protectedRoute,
@@ -229,6 +245,8 @@ const routeTree = rootRoute.addChildren([
     logsRoute,
     chatRoute,
     settingsRoute,
+    packMarketRoute,
+    packDetailRoute,
     webuiFeedbackSurveyRoute,
     maibotFeedbackSurveyRoute,
   ]),
