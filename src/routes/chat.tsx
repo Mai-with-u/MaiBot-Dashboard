@@ -519,8 +519,8 @@ export function ChatPage() {
     }
   }, [updateTab])
 
-  // 为指定标签页连接 WebSocket
-  const connectWebSocketForTab = useCallback((tabId: string, tabType: 'webui' | 'virtual', config?: VirtualIdentityConfig) => {
+  // 为指定标签页连接 WebSocket（异步，需要先获取认证 token）
+  const connectWebSocketForTab = useCallback(async (tabId: string, tabType: 'webui' | 'virtual', config?: VirtualIdentityConfig) => {
     // 如果已经有连接，不要重复创建
     const existingWs = wsMapRef.current.get(tabId)
     if (existingWs?.readyState === WebSocket.OPEN || 
@@ -531,8 +531,27 @@ export function ChatPage() {
 
     setIsConnecting(true)
 
+    // 先获取临时 WebSocket token
+    let wsToken: string | null = null
+    try {
+      const tokenResponse = await fetchWithAuth('/api/webui/ws-token')
+      if (tokenResponse.ok) {
+        const tokenData = await tokenResponse.json()
+        if (tokenData.success && tokenData.token) {
+          wsToken = tokenData.token
+        }
+      }
+    } catch (error) {
+      console.error(`[Tab ${tabId}] 获取 WebSocket token 失败:`, error)
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const params = new URLSearchParams()
+    
+    // 如果有 token，添加到参数
+    if (wsToken) {
+      params.append('token', wsToken)
+    }
     
     if (tabType === 'virtual' && config) {
       params.append('user_id', config.userId)

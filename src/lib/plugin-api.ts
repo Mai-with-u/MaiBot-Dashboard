@@ -268,52 +268,90 @@ export function isPluginCompatible(
 }
 
 /**
- * 连接插件加载进度 WebSocket
+ * 获取 WebSocket 临时认证 token
  */
-export function connectPluginProgressWebSocket(
+async function getWsToken(): Promise<string | null> {
+  try {
+    const response = await fetchWithAuth('/api/webui/ws-token')
+    if (!response.ok) {
+      console.error('获取 WebSocket token 失败:', response.status)
+      return null
+    }
+    const data = await response.json()
+    if (data.success && data.token) {
+      return data.token
+    }
+    return null
+  } catch (error) {
+    console.error('获取 WebSocket token 失败:', error)
+    return null
+  }
+}
+
+/**
+ * 连接插件加载进度 WebSocket
+ * 
+ * 使用临时 token 进行认证，异步获取 token 后连接
+ */
+export async function connectPluginProgressWebSocket(
   onProgress: (progress: PluginLoadProgress) => void,
   onError?: (error: Event) => void
-): WebSocket {
+): Promise<WebSocket | null> {
+  // 先获取临时 token
+  const wsToken = await getWsToken()
+  
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const host = window.location.host
-  const ws = new WebSocket(`${protocol}//${host}/api/webui/ws/plugin-progress`)
+  let wsUrl = `${protocol}//${host}/api/webui/ws/plugin-progress`
   
-  ws.onopen = () => {
-    console.log('Plugin progress WebSocket connected')
-    // 发送心跳
-    const heartbeat = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send('ping')
-      } else {
-        clearInterval(heartbeat)
-      }
-    }, 30000)
+  // 如果获取到了 token，添加到 URL
+  if (wsToken) {
+    wsUrl += `?token=${encodeURIComponent(wsToken)}`
   }
   
-  ws.onmessage = (event) => {
-    try {
-      // 忽略心跳响应
-      if (event.data === 'pong') {
-        return
-      }
-      
-      const data = JSON.parse(event.data) as PluginLoadProgress
-      onProgress(data)
-    } catch (error) {
-      console.error('Failed to parse progress data:', error)
+  try {
+    const ws = new WebSocket(wsUrl)
+    
+    ws.onopen = () => {
+      console.log('Plugin progress WebSocket connected')
+      // 发送心跳
+      const heartbeat = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send('ping')
+        } else {
+          clearInterval(heartbeat)
+        }
+      }, 30000)
     }
+    
+    ws.onmessage = (event) => {
+      try {
+        // 忽略心跳响应
+        if (event.data === 'pong') {
+          return
+        }
+        
+        const data = JSON.parse(event.data) as PluginLoadProgress
+        onProgress(data)
+      } catch (error) {
+        console.error('Failed to parse progress data:', error)
+      }
+    }
+    
+    ws.onerror = (error) => {
+      console.error('Plugin progress WebSocket error:', error)
+      onError?.(error)
+    }
+    
+    ws.onclose = () => {
+      console.log('Plugin progress WebSocket disconnected')
+    }
+    
+    return ws
+  } catch (error) {
+    console.error('创建 WebSocket 连接失败:', error)
+    return null
   }
-  
-  ws.onerror = (error) => {
-    console.error('Plugin progress WebSocket error:', error)
-    onError?.(error)
-  }
-  
-  ws.onclose = () => {
-    console.log('Plugin progress WebSocket disconnected')
-  }
-  
-  return ws
 }
 
 /**

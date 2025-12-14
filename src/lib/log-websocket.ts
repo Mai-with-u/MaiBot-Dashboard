@@ -3,6 +3,7 @@
  * 确保整个应用只有一个 WebSocket 连接
  */
 
+import { fetchWithAuth } from './fetch-with-auth'
 import { getSetting } from './settings-manager'
 
 export interface LogEntry {
@@ -55,27 +56,63 @@ class LogWebSocketManager {
   /**
    * 获取 WebSocket URL
    */
-  private getWebSocketUrl(): string {
+  private getWebSocketUrl(token?: string): string {
+    let baseUrl: string
     if (import.meta.env.DEV) {
       // 开发模式：连接到 WebUI 后端服务器
-      return 'ws://127.0.0.1:8001/ws/logs'
+      baseUrl = 'ws://127.0.0.1:8001/ws/logs'
     } else {
       // 生产模式：使用当前页面的 host
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const host = window.location.host
-      return `${protocol}//${host}/ws/logs`
+      baseUrl = `${protocol}//${host}/ws/logs`
+    }
+    
+    // 如果有 token，添加到 URL 参数
+    if (token) {
+      return `${baseUrl}?token=${encodeURIComponent(token)}`
+    }
+    return baseUrl
+  }
+
+  /**
+   * 获取 WebSocket 临时认证 token
+   */
+  private async getWsToken(): Promise<string | null> {
+    try {
+      // 使用相对路径，让前端代理处理请求，避免 CORS 问题
+      const response = await fetchWithAuth('/api/webui/ws-token', {
+        method: 'GET',
+        credentials: 'include', // 携带 Cookie
+      })
+      
+      if (!response.ok) {
+        console.error('获取 WebSocket token 失败:', response.status)
+        return null
+      }
+      
+      const data = await response.json()
+      if (data.success && data.token) {
+        return data.token
+      }
+      return null
+    } catch (error) {
+      console.error('获取 WebSocket token 失败:', error)
+      return null
     }
   }
 
   /**
    * 连接 WebSocket
    */
-  connect() {
+  async connect() {
     if (this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) {
       return
     }
 
-    const wsUrl = this.getWebSocketUrl()
+    // 先获取临时认证 token
+    const wsToken = await this.getWsToken()
+    const wsUrl = this.getWebSocketUrl(wsToken || undefined)
 
     try {
       this.ws = new WebSocket(wsUrl)
@@ -133,7 +170,7 @@ class LogWebSocketManager {
     const delay = Math.min(baseInterval * this.reconnectAttempts, 30000)
 
     this.reconnectTimeout = window.setTimeout(() => {
-      this.connect()
+      this.connect() // connect 是 async 但这里不需要 await，它内部会处理错误
     }, delay)
   }
 
@@ -264,5 +301,8 @@ export const logWebSocket = new LogWebSocketManager()
 
 // 自动连接（应用启动时）
 if (typeof window !== 'undefined') {
-  logWebSocket.connect()
+  // 延迟一下确保页面加载完成
+  setTimeout(() => {
+    logWebSocket.connect()
+  }, 100)
 }

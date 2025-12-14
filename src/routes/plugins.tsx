@@ -127,8 +127,8 @@ function PluginsPageContent() {
     let isUnmounted = false
 
     const init = async () => {
-      // 1. 先连接 WebSocket
-      ws = connectPluginProgressWebSocket(
+      // 1. 先连接 WebSocket（异步获取 token）
+      ws = await connectPluginProgressWebSocket(
         (progress) => {
           if (isUnmounted) return
           
