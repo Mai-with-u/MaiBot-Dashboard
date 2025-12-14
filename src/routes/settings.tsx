@@ -4,6 +4,7 @@ import { useAnimation } from '@/hooks/use-animation'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
+import { fetchWithAuth } from '@/lib/fetch-with-auth'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -1084,14 +1085,9 @@ function OtherTab() {
     setIsResetting(true)
 
     try {
-      const token = localStorage.getItem('access-token')
-
       // 调用后端API重置首次配置状态
-      const response = await fetch('/api/webui/setup/reset', {
+      const response = await fetchWithAuth('/api/webui/setup/reset', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       })
 
       const data = await response.json()

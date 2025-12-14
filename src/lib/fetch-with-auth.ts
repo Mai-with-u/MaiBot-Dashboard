@@ -3,19 +3,26 @@
 /**
  * 增强的 fetch 函数，自动处理 401 错误并跳转到登录页
  * 使用 HttpOnly Cookie 进行认证，自动携带 credentials
+ * 
+ * 对于 FormData 请求，不自动设置 Content-Type，让浏览器自动设置 multipart/form-data
  */
 export async function fetchWithAuth(
   input: RequestInfo | URL,
   init?: RequestInit
 ): Promise<Response> {
+  // 检查是否是 FormData 请求
+  const isFormData = init?.body instanceof FormData
+  
+  // 构建 headers，对于 FormData 不设置 Content-Type
+  const headers: HeadersInit = isFormData
+    ? { ...init?.headers }
+    : { 'Content-Type': 'application/json', ...init?.headers }
+  
   // 合并默认配置，确保携带 Cookie
   const config: RequestInit = {
     ...init,
     credentials: 'include', // 确保携带 Cookie
-    headers: {
-      'Content-Type': 'application/json',
-      ...init?.headers,
-    },
+    headers,
   }
   
   const response = await fetch(input, config)

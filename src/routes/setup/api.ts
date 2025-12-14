@@ -276,13 +276,8 @@ export async function saveSiliconFlowConfig(config: SiliconFlowConfig) {
 
 // 标记设置完成
 export async function completeSetup() {
-  const token = localStorage.getItem('access-token')
-
   const response = await fetchWithAuth('/api/webui/setup/complete', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   })
 
   if (!response.ok) {

@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
+import { fetchWithAuth } from '@/lib/fetch-with-auth'
 import {
   ChartContainer,
   ChartTooltip,
@@ -157,11 +158,13 @@ function IndexPageContent() {
   // 获取机器人状态
   const fetchBotStatus = useCallback(async () => {
     try {
-      const token = localStorage.getItem('access-token')
-      const response = await axios.get('/api/webui/system/status', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      setBotStatus(response.data)
+      const response = await fetchWithAuth('/api/webui/system/status')
+      if (response.ok) {
+        const data = await response.json()
+        setBotStatus(data)
+      } else {
+        setBotStatus(null)
+      }
     } catch (error) {
       console.error('获取机器人状态失败:', error)
       setBotStatus(null)
@@ -175,11 +178,11 @@ function IndexPageContent() {
 
   const fetchDashboardData = useCallback(async () => {
     try {
-      const token = localStorage.getItem('access-token')
-      const response = await axios.get(`/api/webui/statistics/dashboard?hours=${timeRange}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      setDashboardData(response.data)
+      const response = await fetchWithAuth(`/api/webui/statistics/dashboard?hours=${timeRange}`)
+      if (response.ok) {
+        const data = await response.json()
+        setDashboardData(data)
+      }
       setLoading(false)
       setLoadingProgress(100)
     } catch (error) {

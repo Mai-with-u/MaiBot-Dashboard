@@ -22,6 +22,7 @@ import Dashboard from '@uppy/react/dashboard'
 import '@uppy/core/css/style.min.css'
 import '@uppy/dashboard/css/style.min.css'
 import '@/styles/uppy-custom.css'
+import { fetchWithAuth } from '@/lib/fetch-with-auth'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1365,7 +1366,6 @@ function EmojiUploadDialog({
     }
 
     setUploading(true)
-    const token = localStorage.getItem('access-token') || ''
     let successCount = 0
     let failedCount = 0
 
@@ -1378,11 +1378,8 @@ function EmojiUploadDialog({
         formData.append('is_registered', fileInfo.isRegistered.toString())
 
         try {
-          const response = await fetch(getEmojiUploadUrl(), {
+          const response = await fetchWithAuth(getEmojiUploadUrl(), {
             method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
             body: formData,
           })
 
