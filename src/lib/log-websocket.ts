@@ -3,7 +3,7 @@
  * 确保整个应用只有一个 WebSocket 连接
  */
 
-import { fetchWithAuth } from './fetch-with-auth'
+import { fetchWithAuth, checkAuthStatus } from './fetch-with-auth'
 import { getSetting } from './settings-manager'
 
 export interface LogEntry {
@@ -103,16 +103,34 @@ class LogWebSocketManager {
   }
 
   /**
-   * 连接 WebSocket
+   * 连接 WebSocket（会先检查登录状态）
    */
   async connect() {
     if (this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) {
       return
     }
 
+    // 检查是否在登录页面
+    if (window.location.pathname === '/auth') {
+      console.log('📡 在登录页面，跳过 WebSocket 连接')
+      return
+    }
+
+    // 检查登录状态，避免未登录时尝试连接
+    const isAuthenticated = await checkAuthStatus()
+    if (!isAuthenticated) {
+      console.log('📡 未登录，跳过 WebSocket 连接')
+      return
+    }
+
     // 先获取临时认证 token
     const wsToken = await this.getWsToken()
-    const wsUrl = this.getWebSocketUrl(wsToken || undefined)
+    if (!wsToken) {
+      console.log('📡 无法获取 WebSocket token，跳过连接')
+      return
+    }
+    
+    const wsUrl = this.getWebSocketUrl(wsToken)
 
     try {
       this.ws = new WebSocket(wsUrl)

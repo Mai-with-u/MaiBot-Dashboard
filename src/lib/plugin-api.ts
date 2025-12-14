@@ -299,15 +299,14 @@ export async function connectPluginProgressWebSocket(
 ): Promise<WebSocket | null> {
   // 先获取临时 token
   const wsToken = await getWsToken()
+  if (!wsToken) {
+    console.warn('无法获取 WebSocket token，可能未登录')
+    return null
+  }
   
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const host = window.location.host
-  let wsUrl = `${protocol}//${host}/api/webui/ws/plugin-progress`
-  
-  // 如果获取到了 token，添加到 URL
-  if (wsToken) {
-    wsUrl += `?token=${encodeURIComponent(wsToken)}`
-  }
+  const wsUrl = `${protocol}//${host}/api/webui/ws/plugin-progress?token=${encodeURIComponent(wsToken)}`
   
   try {
     const ws = new WebSocket(wsUrl)
