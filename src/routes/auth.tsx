@@ -83,6 +83,8 @@ export function AuthPage() {
     }
 
     setIsValidating(true)
+    
+    console.log('开始验证 token...')
 
     try {
       // 向后端发送请求验证 token（后端会设置 HttpOnly Cookie）
@@ -95,19 +97,35 @@ export function AuthPage() {
         body: JSON.stringify({ token: token.trim() }),
       })
 
+      console.log('Token 验证响应状态:', response.status)
+      
       const data = await response.json()
+      console.log('Token 验证响应数据:', data)
 
       if (response.ok && data.valid) {
+        console.log('Token 验证成功，准备跳转...')
+        console.log('is_first_setup:', data.is_first_setup)
+        
         // Token 验证成功，Cookie 已由后端设置
+        // 等待一小段时间确保 Cookie 已设置
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        // 再次检查认证状态
+        const authCheck = await checkAuthStatus()
+        console.log('跳转前认证状态检查:', authCheck)
+        
         // 直接使用验证响应中的 is_first_setup 字段，避免额外请求
         if (data.is_first_setup) {
+          console.log('跳转到首次配置页面')
           // 需要首次配置，跳转到配置向导
           navigate({ to: '/setup' })
         } else {
+          console.log('跳转到首页')
           // 不需要配置或配置已完成，跳转到首页
           navigate({ to: '/' })
         }
       } else {
+        console.error('Token 验证失败:', data.message)
         setError(data.message || 'Token 验证失败，请检查后重试')
       }
     } catch (err) {
