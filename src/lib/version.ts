@@ -5,7 +5,7 @@
  * 修改此处的版本号后，所有展示版本的地方都会自动更新
  */
 
-export const APP_VERSION = '0.12.0 Beta'
+export const APP_VERSION = '0.12.0'
 export const APP_NAME = 'MaiBot Dashboard'
 export const APP_FULL_NAME = `${APP_NAME} v${APP_VERSION}`
 
