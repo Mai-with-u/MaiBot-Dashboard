@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
 import { SearchDialog } from '@/components/search-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { HttpWarningBanner } from '@/components/http-warning-banner'
 import {
   Tooltip,
   TooltipContent,
@@ -282,6 +283,9 @@ export function Layout({ children }: LayoutProps) {
 
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
+        {/* HTTP 安全警告横幅 */}
+        <HttpWarningBanner />
+        
         {/* Topbar */}
         <header className="flex h-16 items-center justify-between border-b bg-card/80 backdrop-blur-md px-4 sticky top-0 z-10">
           <div className="flex items-center gap-4">
