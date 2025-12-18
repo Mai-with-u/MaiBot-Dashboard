@@ -26,11 +26,11 @@ import {
 } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
-import { useRestart, type RestartStatus, type RestartContextType } from '@/lib/restart-context'
+import { useRestart, type RestartStatus, type RestartContextValue } from '@/lib/restart-context'
 import { cn } from '@/lib/utils'
 
 // Hook 用于安全获取 restart context
-function useSafeRestart(): RestartContextType | null {
+function useSafeRestart(): RestartContextValue | null {
   try {
     return useRestart()
   } catch {
