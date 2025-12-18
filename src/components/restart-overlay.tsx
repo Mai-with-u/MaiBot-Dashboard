@@ -26,8 +26,17 @@ import {
 } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
-import { useRestart, type RestartStatus } from '@/lib/restart-context'
+import { useRestart, type RestartStatus, type RestartContextType } from '@/lib/restart-context'
 import { cn } from '@/lib/utils'
+
+// Hook 用于安全获取 restart context
+function useSafeRestart(): RestartContextType | null {
+  try {
+    return useRestart()
+  } catch {
+    return null
+  }
+}
 
 // ============ 类型定义 ============
 
@@ -117,12 +126,7 @@ export function RestartOverlay({
   className,
 }: RestartOverlayProps) {
   // 尝试使用 context（可能不存在）
-  let contextValue: ReturnType<typeof useRestart> | null = null
-  try {
-    contextValue = useRestart()
-  } catch {
-    // 未在 Provider 内，使用独立模式
-  }
+  const contextValue = useSafeRestart()
 
   // 如果有 context，使用 context 状态；否则使用 props
   const isVisible = contextValue ? contextValue.isRestarting : visible

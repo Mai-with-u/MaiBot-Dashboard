@@ -157,7 +157,7 @@ export function TourRenderer() {
   }, [state.isRunning, state.stepIndex, steps])
 
   // 创建一个高层级的容器用于渲染 Joyride
-  const portalContainer = useRef<HTMLDivElement | null>(null)
+  const [portalElement, setPortalElement] = useState<HTMLElement | null>(null)
   
   useEffect(() => {
     // 创建或获取 tour 专用容器
@@ -168,7 +168,8 @@ export function TourRenderer() {
       container.style.cssText = 'position: fixed; top: 0; left: 0; z-index: 99999; pointer-events: none;'
       document.body.appendChild(container)
     }
-    portalContainer.current = container
+    
+    setPortalElement(container)
     
     return () => {
       // 组件卸载时不删除容器，因为可能还会再用
@@ -208,8 +209,8 @@ export function TourRenderer() {
   )
 
   // 使用 Portal 渲染到高层容器
-  if (portalContainer.current) {
-    return createPortal(joyrideElement, portalContainer.current)
+  if (portalElement) {
+    return createPortal(joyrideElement, portalElement)
   }
 
   return joyrideElement

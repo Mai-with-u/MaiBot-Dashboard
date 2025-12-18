@@ -96,11 +96,13 @@ function RegexEditor({
 
   // 测试正则表达式
   useEffect(() => {
+    // 如果输入为空，重置所有测试结果（只在需要时更新）
     if (!regex || !testText) {
-      setMatches(null)
-      setCaptureGroups({})
-      setReplacedReaction(reaction)
-      setError('')
+      // 只有在状态不为空时才重置，避免不必要的 setState
+      if (matches !== null) setMatches(null)
+      if (Object.keys(captureGroups).length > 0) setCaptureGroups({})
+      if (replacedReaction !== reaction) setReplacedReaction(reaction)
+      if (error !== '') setError('')
       return
     }
 
@@ -132,7 +134,7 @@ function RegexEditor({
       setCaptureGroups({})
       setReplacedReaction(reaction)
     }
-  }, [regex, testText, reaction])
+  }, [regex, testText, reaction, matches, captureGroups, replacedReaction, error])
 
   // 高亮显示匹配的文本
   const renderHighlightedText = () => {

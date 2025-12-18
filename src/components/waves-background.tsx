@@ -1,4 +1,13 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+// 生成一个固定的随机种子（在模块加载时生成一次）
+const NOISE_SEED = (() => {
+  // 使用时间戳的一部分作为种子，但在开发环境中使用固定值以保持一致性
+  if (import.meta.env.DEV) {
+    return 42 // 开发环境使用固定种子
+  }
+  return Date.now() % 1000000
+})()
 
 // Perlin Noise implementation
 class Noise {
@@ -86,6 +95,8 @@ export function WavesBackground() {
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const animationRef = useRef<number | undefined>(undefined)
+  const [noiseInstance] = useState(() => new Noise(NOISE_SEED))
+  
   const dataRef = useRef<{
     mouse: {
       x: number
@@ -118,7 +129,7 @@ export function WavesBackground() {
     },
     lines: [],
     paths: [],
-    noise: new Noise(Math.random()),
+    noise: noiseInstance,
     bounding: null,
   })
 
@@ -128,6 +139,8 @@ export function WavesBackground() {
     if (!container || !svg) return
 
     const data = dataRef.current
+    // 将 noiseInstance 赋值给 dataRef
+    data.noise = noiseInstance
 
     // Set size
     const setSize = () => {
@@ -317,7 +330,7 @@ export function WavesBackground() {
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [])
+  }, [noiseInstance])
 
   return (
     <div

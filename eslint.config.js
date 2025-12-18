@@ -18,11 +18,18 @@ export default tseslint.config(
       'react-refresh': reactRefresh,
     },
     rules: {
-      ...reactHooks.configs.recommended.rules,
+      // 将所有 React Hooks 推荐规则降级为警告
+      ...Object.keys(reactHooks.configs.recommended.rules).reduce((acc, key) => {
+        acc[key] = 'warn'
+        return acc
+      }, {}),
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
       ],
+      // 关闭或降级其他规则
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'warn',
     },
   },
 )

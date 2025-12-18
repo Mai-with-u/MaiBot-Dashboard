@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Search, FileText, Server, Boxes, Smile, MessageSquare, UserCircle, FileSearch, BarChart3, Package, Settings, Home, Hash } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import {
@@ -124,18 +124,13 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
       item.category.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  // 重置状态
-  useEffect(() => {
-    if (open) {
-      setSearchQuery('')
-      setSelectedIndex(0)
-    }
-  }, [open])
-
   // 导航到页面
   const handleNavigate = useCallback((path: string) => {
     navigate({ to: path })
     onOpenChange(false)
+    // 在导航后重置状态
+    setSearchQuery('')
+    setSelectedIndex(0)
   }, [navigate, onOpenChange])
 
   // 键盘导航

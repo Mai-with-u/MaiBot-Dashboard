@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, type ReactNode } from 'react'
+import { useState, useCallback, type ReactNode } from 'react'
 import type { Step, CallBackProps, Status } from 'react-joyride'
 import { TourContext } from './tour-context'
 import type { TourId, TourState } from './types'
@@ -27,20 +27,20 @@ export function TourProvider({ children }: { children: ReactNode }) {
     isRunning: false,
   })
   
-  // 使用 useRef 存储 tours，避免不必要的重渲染
-  const toursRef = useRef<Map<TourId, Step[]>>(new Map())
-  // 用于强制更新的计数器
-  const [, forceUpdate] = useState(0)
+  // 使用 useState 存储 tours（Map 对象是可变的，可以直接修改）
+  const [tours] = useState<Map<TourId, Step[]>>(() => new Map())
   const [completedTours, setCompletedTours] = useState<Set<TourId>>(getCompletedTours)
+  // 用于强制重新渲染的计数器
+  const [, forceUpdate] = useState(0)
 
   const registerTour = useCallback((tourId: TourId, steps: Step[]) => {
-    toursRef.current.set(tourId, steps)
-    // 强制更新以确保 getCurrentSteps 能获取到最新数据
+    tours.set(tourId, steps)
+    // 强制更新以确保 context 消费者能获取到最新数据
     forceUpdate(n => n + 1)
-  }, [])
+  }, [tours])
 
   const unregisterTour = useCallback((tourId: TourId) => {
-    toursRef.current.delete(tourId)
+    tours.delete(tourId)
     // 如果正在运行的 Tour 被注销，停止它
     setState(prev => {
       if (prev.activeTourId === tourId) {
@@ -48,17 +48,17 @@ export function TourProvider({ children }: { children: ReactNode }) {
       }
       return prev
     })
-  }, [])
+  }, [tours])
 
   const startTour = useCallback((tourId: TourId, startIndex = 0) => {
-    if (toursRef.current.has(tourId)) {
+    if (tours.has(tourId)) {
       setState({
         activeTourId: tourId,
         stepIndex: startIndex,
         isRunning: true,
       })
     }
-  }, [])
+  }, [tours])
 
   const stopTour = useCallback(() => {
     setState(prev => ({
@@ -90,8 +90,8 @@ export function TourProvider({ children }: { children: ReactNode }) {
 
   const getCurrentSteps = useCallback((): Step[] => {
     if (!state.activeTourId) return []
-    return toursRef.current.get(state.activeTourId) || []
-  }, [state.activeTourId])
+    return tours.get(state.activeTourId) || []
+  }, [state.activeTourId, tours])
 
   const markTourCompleted = useCallback((tourId: TourId) => {
     setCompletedTours(prev => {
@@ -156,7 +156,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
     <TourContext.Provider
       value={{
         state,
-        tours: toursRef.current,
+        tours,
         registerTour,
         unregisterTour,
         startTour,

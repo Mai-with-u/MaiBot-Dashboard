@@ -35,6 +35,15 @@ export function EmojiThumbnail({
   const [state, setState] = useState<LoadingState>('loading')
   const [retryCount, setRetryCount] = useState(0)
   const [imageSrc, setImageSrc] = useState<string | null>(null)
+  const [currentSrc, setCurrentSrc] = useState(src)
+
+  // 当 src 变化时重置状态
+  if (src !== currentSrc) {
+    setState('loading')
+    setRetryCount(0)
+    setImageSrc(null)
+    setCurrentSrc(src)
+  }
 
   const loadImage = useCallback(async () => {
     try {
@@ -73,12 +82,6 @@ export function EmojiThumbnail({
       setState('error')
     }
   }, [src, retryCount, maxRetries, retryInterval])
-
-  useEffect(() => {
-    setState('loading')
-    setRetryCount(0)
-    setImageSrc(null)
-  }, [src])
 
   useEffect(() => {
     loadImage()

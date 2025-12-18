@@ -132,46 +132,51 @@ export function KeyValueEditor({
   placeholder = "添加额外参数...",
 }: KeyValueEditorProps) {
   const [mode, setMode] = useState<'list' | 'json'>('list')
-  const [pairs, setPairs] = useState<KeyValuePair[]>(() => recordToPairs(value || {}))
-  const [jsonText, setJsonText] = useState(() => 
-    Object.keys(value || {}).length > 0 ? JSON.stringify(value, null, 2) : ''
+  
+  // 使用 useMemo 来派生 pairs 和 jsonText，而不是用 useEffect 同步
+  const pairs = useMemo(() => recordToPairs(value || {}), [value])
+  const initialJsonText = useMemo(() => 
+    Object.keys(value || {}).length > 0 ? JSON.stringify(value, null, 2) : '', 
+    [value]
   )
+  
+  const [editingPairs, setEditingPairs] = useState<KeyValuePair[]>(pairs)
+  const [editingJsonText, setEditingJsonText] = useState(initialJsonText)
   const [jsonError, setJsonError] = useState<string | null>(null)
 
-  // 当外部 value 变化时同步内部状态
+  // 当 value 变化时重置编辑状态
   useEffect(() => {
-    const newPairs = recordToPairs(value || {})
-    setPairs(newPairs)
-    setJsonText(Object.keys(value || {}).length > 0 ? JSON.stringify(value, null, 2) : '')
-  }, [value])
+    setEditingPairs(pairs)
+    setEditingJsonText(initialJsonText)
+  }, [pairs, initialJsonText])
 
   // JSON 预览数据
   const previewData = useMemo(() => {
-    const validation = validateJson(jsonText)
+    const validation = validateJson(editingJsonText)
     if (validation.valid && validation.parsed) {
       return { success: true, data: validation.parsed }
     }
     return { success: false, data: {} }
-  }, [jsonText])
+  }, [editingJsonText])
 
   // 切换模式时同步数据
   const handleModeChange = useCallback((newMode: string) => {
     const targetMode = newMode as 'list' | 'json'
     if (targetMode === 'json' && mode === 'list') {
       // 从列表模式切换到 JSON 模式
-      const record = pairsToRecord(pairs)
-      setJsonText(Object.keys(record).length > 0 ? JSON.stringify(record, null, 2) : '')
+      const record = pairsToRecord(editingPairs)
+      setEditingJsonText(Object.keys(record).length > 0 ? JSON.stringify(record, null, 2) : '')
       setJsonError(null)
     } else if (targetMode === 'list' && mode === 'json') {
       // 从 JSON 模式切换到列表模式
-      const validation = validateJson(jsonText)
+      const validation = validateJson(editingJsonText)
       if (validation.valid && validation.parsed) {
-        setPairs(recordToPairs(validation.parsed))
+        setEditingPairs(recordToPairs(validation.parsed))
         setJsonError(null)
       }
     }
     setMode(targetMode)
-  }, [mode, pairs, jsonText])
+  }, [mode, editingPairs, editingJsonText])
 
   // 添加新的键值对
   const addPair = useCallback(() => {
@@ -181,20 +186,20 @@ export function KeyValueEditor({
       value: '',
       type: 'string',
     }
-    const newPairs = [...pairs, newPair]
-    setPairs(newPairs)
-  }, [pairs])
+    const newPairs = [...editingPairs, newPair]
+    setEditingPairs(newPairs)
+  }, [editingPairs])
 
   // 删除键值对
   const removePair = useCallback((id: string) => {
-    const newPairs = pairs.filter(p => p.id !== id)
-    setPairs(newPairs)
+    const newPairs = editingPairs.filter(p => p.id !== id)
+    setEditingPairs(newPairs)
     onChange(pairsToRecord(newPairs))
-  }, [pairs, onChange])
+  }, [editingPairs, onChange])
 
   // 更新键值对
   const updatePair = useCallback((id: string, field: 'key' | 'value' | 'type', newValue: string | ValueType) => {
-    const newPairs = pairs.map(pair => {
+    const newPairs = editingPairs.map(pair => {
       if (pair.id !== id) return pair
 
       if (field === 'type') {
@@ -216,13 +221,13 @@ export function KeyValueEditor({
         return { ...pair, [field]: newValue }
       }
     })
-    setPairs(newPairs)
+    setEditingPairs(newPairs)
     onChange(pairsToRecord(newPairs))
-  }, [pairs, onChange])
+  }, [editingPairs, onChange])
 
   // JSON 文本变化
   const handleJsonChange = useCallback((text: string) => {
-    setJsonText(text)
+    setEditingJsonText(text)
     const validation = validateJson(text)
     if (validation.valid && validation.parsed) {
       setJsonError(null)
@@ -255,7 +260,7 @@ export function KeyValueEditor({
 
         {/* 键值对列表模式 */}
         <TabsContent value="list" className="mt-3 space-y-2">
-          {pairs.length === 0 ? (
+          {editingPairs.length === 0 ? (
             <div className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-md">
               {placeholder}
             </div>
@@ -269,7 +274,7 @@ export function KeyValueEditor({
                 <span></span>
               </div>
               {/* 键值对列表 */}
-              {pairs.map((pair) => (
+              {editingPairs.map((pair) => (
                 <div key={pair.id} className="grid grid-cols-[1fr_1fr_90px_32px] gap-2 items-center">
                   <Input
                     value={pair.key}
@@ -347,7 +352,7 @@ export function KeyValueEditor({
                     <AlertCircle className="h-3 w-3" />
                     <span className="truncate max-w-[150px]">{jsonError}</span>
                   </div>
-                ) : jsonText.trim() && (
+                ) : editingJsonText.trim() && (
                   <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
                     <Check className="h-3 w-3" />
                     <span>有效</span>
@@ -355,7 +360,7 @@ export function KeyValueEditor({
                 )}
               </div>
               <Textarea
-                value={jsonText}
+                value={editingJsonText}
                 onChange={(e) => handleJsonChange(e.target.value)}
                 placeholder={'{\n  "key": "value"\n}'}
                 className={cn(

@@ -12,14 +12,16 @@ import { APP_VERSION } from '@/lib/version'
 import type { SurveyConfig, QuestionAnswer } from '@/types/survey'
 
 export function WebUIFeedbackSurveyPage() {
-  const [surveyConfig, setSurveyConfig] = useState<SurveyConfig | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // 初始化问卷配置，自动填充版本号
-  useEffect(() => {
+  // 使用 useMemo 派生配置而不是 useState + useEffect
+  const surveyConfig = useMemo(() => {
     // 深拷贝配置以避免修改原始对象
-    const config = JSON.parse(JSON.stringify(webuiFeedbackSurvey)) as SurveyConfig
-    setSurveyConfig(config)
+    return JSON.parse(JSON.stringify(webuiFeedbackSurvey)) as SurveyConfig
+  }, [])
+
+  // 初始化完成后设置加载状态
+  useEffect(() => {
     setIsLoading(false)
   }, [])
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -43,23 +43,40 @@ const TimeRangePicker = React.memo(function TimeRangePicker({
   value: string
   onChange: (value: string) => void
 }) {
-  const [startHour, setStartHour] = useState('00')
-  const [startMinute, setStartMinute] = useState('00')
-  const [endHour, setEndHour] = useState('23')
-  const [endMinute, setEndMinute] = useState('59')
-
-  useEffect(() => {
+  // 解析初始值
+  const parsedValue = useMemo(() => {
     const parts = value.split('-')
     if (parts.length === 2) {
       const [start, end] = parts
       const [sh, sm] = start.split(':')
       const [eh, em] = end.split(':')
-      if (sh) setStartHour(sh.padStart(2, '0'))
-      if (sm) setStartMinute(sm.padStart(2, '0'))
-      if (eh) setEndHour(eh.padStart(2, '0'))
-      if (em) setEndMinute(em.padStart(2, '0'))
+      return {
+        startHour: sh ? sh.padStart(2, '0') : '00',
+        startMinute: sm ? sm.padStart(2, '0') : '00',
+        endHour: eh ? eh.padStart(2, '0') : '23',
+        endMinute: em ? em.padStart(2, '0') : '59',
+      }
+    }
+    return {
+      startHour: '00',
+      startMinute: '00',
+      endHour: '23',
+      endMinute: '59',
     }
   }, [value])
+
+  const [startHour, setStartHour] = useState(parsedValue.startHour)
+  const [startMinute, setStartMinute] = useState(parsedValue.startMinute)
+  const [endHour, setEndHour] = useState(parsedValue.endHour)
+  const [endMinute, setEndMinute] = useState(parsedValue.endMinute)
+
+  // 当value变化时同步状态
+  useEffect(() => {
+    setStartHour(parsedValue.startHour)
+    setStartMinute(parsedValue.startMinute)
+    setEndHour(parsedValue.endHour)
+    setEndMinute(parsedValue.endMinute)
+  }, [parsedValue])
 
   const updateTime = (
     newStartHour: string,
