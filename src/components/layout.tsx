@@ -1,4 +1,4 @@
-import { Menu, Moon, Sun, ChevronLeft, Home, Settings, LogOut, FileText, Server, Boxes, Smile, MessageSquare, UserCircle, FileSearch, Package, BookOpen, Search, Sliders, Network, Hash, LayoutGrid } from 'lucide-react'
+import { Menu, Moon, Sun, ChevronLeft, Home, Settings, LogOut, FileText, Server, Boxes, Smile, MessageSquare, UserCircle, FileSearch, Package, BookOpen, Search, Sliders, Network, Hash, LayoutGrid, Database } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Link, useMatchRoute } from '@tanstack/react-router'
 import { useTheme, toggleThemeWithTransition } from './use-theme'
@@ -9,6 +9,7 @@ import { Kbd } from '@/components/ui/kbd'
 import { SearchDialog } from '@/components/search-dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { HttpWarningBanner } from '@/components/http-warning-banner'
+import { BackToTop } from '@/components/back-to-top'
 import {
   Tooltip,
   TooltipContent,
@@ -92,6 +93,7 @@ export function Layout({ children }: LayoutProps) {
         { icon: Hash, label: '黑话管理', path: '/resource/jargon' },
         { icon: UserCircle, label: '人物信息管理', path: '/resource/person' },
         { icon: Network, label: '知识库图谱可视化', path: '/resource/knowledge-graph' },
+        { icon: Database, label: '麦麦知识库管理', path: '/resource/knowledge-base' },
       ],
     },
     {
@@ -368,6 +370,9 @@ export function Layout({ children }: LayoutProps) {
 
         {/* Page content */}
         <main className="flex-1 overflow-hidden bg-background">{children}</main>
+
+        {/* Back to Top Button */}
+        <BackToTop />
       </div>
     </div>
     </TooltipProvider>

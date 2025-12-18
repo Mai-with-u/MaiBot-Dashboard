@@ -569,8 +569,13 @@ export async function getPluginConfigSchema(pluginId: string): Promise<PluginCon
   })
   
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.detail || '获取配置 Schema 失败')
+    const text = await response.text()
+    try {
+      const error = JSON.parse(text)
+      throw new Error(error.detail || '获取配置 Schema 失败')
+    } catch {
+      throw new Error(`获取配置 Schema 失败 (${response.status})`)
+    }
   }
   
   const result = await response.json()
@@ -591,8 +596,40 @@ export async function getPluginConfig(pluginId: string): Promise<Record<string, 
   })
   
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.detail || '获取配置失败')
+    const text = await response.text()
+    try {
+      const error = JSON.parse(text)
+      throw new Error(error.detail || '获取配置失败')
+    } catch {
+      throw new Error(`获取配置失败 (${response.status})`)
+    }
+  }
+  
+  const result = await response.json()
+  
+  if (!result.success) {
+    throw new Error(result.message || '获取配置失败')
+  }
+  
+  return result.config
+}
+
+/**
+ * 获取插件原始 TOML 配置
+ */
+export async function getPluginConfigRaw(pluginId: string): Promise<string> {
+  const response = await fetchWithAuth(`/api/webui/plugins/config/${pluginId}/raw`, {
+    headers: getAuthHeaders()
+  })
+  
+  if (!response.ok) {
+    const text = await response.text()
+    try {
+      const error = JSON.parse(text)
+      throw new Error(error.detail || '获取配置失败')
+    } catch {
+      throw new Error(`获取配置失败 (${response.status})`)
+    }
   }
   
   const result = await response.json()
@@ -613,8 +650,29 @@ export async function updatePluginConfig(
 ): Promise<{ success: boolean; message: string; note?: string }> {
   const response = await fetchWithAuth(`/api/webui/plugins/config/${pluginId}`, {
     method: 'PUT',
-    
+    headers: getAuthHeaders(),
     body: JSON.stringify({ config })
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || '保存配置失败')
+  }
+  
+  return await response.json()
+}
+
+/**
+ * 更新插件原始 TOML 配置
+ */
+export async function updatePluginConfigRaw(
+  pluginId: string,
+  configToml: string
+): Promise<{ success: boolean; message: string; note?: string }> {
+  const response = await fetchWithAuth(`/api/webui/plugins/config/${pluginId}/raw`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ config: configToml })
   })
   
   if (!response.ok) {

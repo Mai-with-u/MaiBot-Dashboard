@@ -14,6 +14,7 @@ import { ExpressionManagementPage } from './routes/resource/expression'
 import { JargonManagementPage } from './routes/resource/jargon'
 import { PersonManagementPage } from './routes/person'
 import { KnowledgeGraphPage } from './routes/resource/knowledge-graph'
+import { KnowledgeBasePage } from './routes/resource/knowledge-base'
 import { LogViewerPage } from './routes/logs'
 import { PluginsPage } from './routes/plugins'
 import { ModelPresetsPage } from './routes/model-presets'
@@ -139,6 +140,13 @@ const knowledgeGraphRoute = createRoute({
   component: KnowledgeGraphPage,
 })
 
+// 资源管理路由 - 麦麦知识库管理
+const knowledgeBaseRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/resource/knowledge-base',
+  component: KnowledgeBasePage,
+})
+
 // 日志查看器路由
 const logsRoute = createRoute({
   getParentRoute: () => protectedRoute,
@@ -238,6 +246,7 @@ const routeTree = rootRoute.addChildren([
     jargonManagementRoute,
     personManagementRoute,
     knowledgeGraphRoute,
+    knowledgeBaseRoute,
     pluginsRoute,
     modelPresetsRoute,
     pluginConfigRoute,

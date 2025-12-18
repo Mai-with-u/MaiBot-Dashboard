@@ -9,9 +9,12 @@ import { Button } from '@/components/ui/button'
 export function HttpWarningBanner() {
   // 直接计算初始状态，避免 effect 中调用 setState
   const isHttp = window.location.protocol === 'http:'
+  const hostname = window.location.hostname.toLowerCase()
+  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
   const dismissed = sessionStorage.getItem('http-warning-dismissed') === 'true'
   
-  const [isVisible, setIsVisible] = useState(isHttp && !dismissed)
+  // 本地访问（localhost/127.0.0.1）不显示警告
+  const [isVisible, setIsVisible] = useState(isHttp && !isLocalhost && !dismissed)
   const [isDismissed, setIsDismissed] = useState(false)
 
   const handleDismiss = () => {

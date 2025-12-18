@@ -11,6 +11,9 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { ListFieldEditor } from '@/components/ListFieldEditor'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { CodeEditor } from '@/components'
+import { parse as parseToml } from 'smol-toml'
 import {
   Select,
   SelectContent,
@@ -44,6 +47,8 @@ import {
   Eye,
   EyeOff,
   RotateCw,
+  Code2,
+  Layout,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { RestartProvider, useRestart } from '@/lib/restart-context'
@@ -52,7 +57,9 @@ import {
   getInstalledPlugins,
   getPluginConfigSchema,
   getPluginConfig,
+  getPluginConfigRaw,
   updatePluginConfig,
+  updatePluginConfigRaw,
   resetPluginConfig,
   togglePlugin,
   type InstalledPlugin,
@@ -318,25 +325,32 @@ interface PluginConfigEditorProps {
 function PluginConfigEditor({ plugin, onBack }: PluginConfigEditorProps) {
   const { toast } = useToast()
   const { triggerRestart, isRestarting } = useRestart()
+  const [editMode, setEditMode] = useState<'visual' | 'source'>('visual')
   const [schema, setSchema] = useState<PluginConfigSchema | null>(null)
   const [config, setConfig] = useState<Record<string, unknown>>({})
   const [originalConfig, setOriginalConfig] = useState<Record<string, unknown>>({})
+  const [sourceCode, setSourceCode] = useState('')
+  const [originalSourceCode, setOriginalSourceCode] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const [hasTomlError, setHasTomlError] = useState(false)
   const [resetDialogOpen, setResetDialogOpen] = useState(false)
 
   // 加载配置
   const loadConfig = useCallback(async () => {
     setLoading(true)
     try {
-      const [schemaData, configData] = await Promise.all([
+      const [schemaData, configData, rawConfigData] = await Promise.all([
         getPluginConfigSchema(plugin.id),
-        getPluginConfig(plugin.id)
+        getPluginConfig(plugin.id),
+        getPluginConfigRaw(plugin.id)
       ])
       setSchema(schemaData)
       setConfig(configData)
       setOriginalConfig(JSON.parse(JSON.stringify(configData)))
+      setSourceCode(rawConfigData)
+      setOriginalSourceCode(rawConfigData)
     } catch (error) {
       toast({
         title: '加载配置失败',
@@ -354,8 +368,12 @@ function PluginConfigEditor({ plugin, onBack }: PluginConfigEditorProps) {
 
   // 检测配置变化
   useEffect(() => {
-    setHasChanges(JSON.stringify(config) !== JSON.stringify(originalConfig))
-  }, [config, originalConfig])
+    if (editMode === 'visual') {
+      setHasChanges(JSON.stringify(config) !== JSON.stringify(originalConfig))
+    } else {
+      setHasChanges(sourceCode !== originalSourceCode)
+    }
+  }, [config, originalConfig, sourceCode, originalSourceCode, editMode])
 
   // 处理字段变化
   const handleFieldChange = (sectionName: string, fieldName: string, value: unknown) => {
@@ -372,8 +390,31 @@ function PluginConfigEditor({ plugin, onBack }: PluginConfigEditorProps) {
   const handleSave = async () => {
     setSaving(true)
     try {
-      await updatePluginConfig(plugin.id, config)
-      setOriginalConfig(JSON.parse(JSON.stringify(config)))
+      if (editMode === 'source') {
+        // 源代码模式：先验证 TOML 格式
+        try {
+          parseToml(sourceCode)
+        } catch (error) {
+          setHasTomlError(true)
+          toast({
+            title: 'TOML 格式错误',
+            description: error instanceof Error ? error.message : '无法解析 TOML 配置，请检查语法',
+            variant: 'destructive'
+          })
+          setSaving(false)
+          return
+        }
+        
+        // 格式正确，保存原始配置
+        await updatePluginConfigRaw(plugin.id, sourceCode)
+        setOriginalSourceCode(sourceCode)
+        setHasTomlError(false)
+      } else {
+        // 可视化模式
+        await updatePluginConfig(plugin.id, config)
+        setOriginalConfig(JSON.parse(JSON.stringify(config)))
+      }
+      
       toast({
         title: '配置已保存',
         description: '更改将在插件重新加载后生效'
@@ -480,6 +521,23 @@ function PluginConfigEditor({ plugin, onBack }: PluginConfigEditorProps) {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setEditMode(editMode === 'visual' ? 'source' : 'visual')}
+          >
+            {editMode === 'visual' ? (
+              <>
+                <Code2 className="h-4 w-4 mr-2" />
+                源代码
+              </>
+            ) : (
+              <>
+                <Layout className="h-4 w-4 mr-2" />
+                可视化
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => triggerRestart()}
             disabled={isRestarting}
           >
@@ -531,6 +589,39 @@ function PluginConfigEditor({ plugin, onBack }: PluginConfigEditorProps) {
         </Card>
       )}
 
+      {/* 源代码模式 */}
+      {editMode === 'source' && (
+        <div className="space-y-4">
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>源代码模式（高级功能）：</strong>直接编辑 TOML 配置文件。保存时会验证格式，只有格式正确才能保存。
+              {hasTomlError && (
+                <span className="text-destructive font-semibold ml-2">⚠️ 上次保存失败，请检查 TOML 格式</span>
+              )}
+            </AlertDescription>
+          </Alert>
+          
+          <CodeEditor
+            value={sourceCode}
+            onChange={(value) => {
+              setSourceCode(value)
+              if (hasTomlError) {
+                setHasTomlError(false)
+              }
+            }}
+            language="toml"
+            theme="dark"
+            height="calc(100vh - 350px)"
+            minHeight="500px"
+            placeholder="TOML 配置内容"
+          />
+        </div>
+      )}
+
+      {/* 可视化模式 */}
+      {editMode === 'visual' && (
+      <>
       {/* 配置区域 */}
       {schema.layout.type === 'tabs' && schema.layout.tabs.length > 0 ? (
         // 标签页布局
@@ -576,6 +667,8 @@ function PluginConfigEditor({ plugin, onBack }: PluginConfigEditorProps) {
             />
           ))}
         </div>
+      )}
+      </>
       )}
 
       {/* 重置确认对话框 */}
@@ -649,6 +742,11 @@ function PluginConfigPageContent() {
       plugin.manifest.description?.toLowerCase().includes(query)
     )
   })
+  
+  // 去重：如果有重复的 plugin.id，只保留第一个
+  const uniqueFilteredPlugins = filteredPlugins.filter((plugin, index, self) =>
+    index === self.findIndex((p) => p.id === plugin.id)
+  )
 
   // 统计数据
   const enabledCount = plugins.length // 暂时假设都启用
@@ -748,7 +846,7 @@ function PluginConfigPageContent() {
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : filteredPlugins.length === 0 ? (
+            ) : uniqueFilteredPlugins.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 space-y-4">
                 <Package className="h-16 w-16 text-muted-foreground/50" />
                 <div className="text-center space-y-2">
@@ -762,7 +860,7 @@ function PluginConfigPageContent() {
               </div>
             ) : (
               <div className="space-y-2">
-                {filteredPlugins.map(plugin => (
+                {uniqueFilteredPlugins.map(plugin => (
                   <div
                     key={plugin.id}
                     className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
