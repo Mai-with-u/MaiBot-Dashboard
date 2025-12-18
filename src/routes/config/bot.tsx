@@ -12,6 +12,7 @@ import {
   FeaturesSection,
   ExpressionSection,
   ProcessingSection,
+  WebUISection,
 } from './bot/sections'
 import {
   AlertDialog,
@@ -53,6 +54,7 @@ import type {
   DebugConfig,
   MaimMessageConfig,
   TelemetryConfig,
+  WebUIConfig,
 } from './bot/types'
 
 // 导入 useAutoSave hook
@@ -104,6 +106,7 @@ function BotConfigPageContent() {
   const [debugConfig, setDebugConfig] = useState<DebugConfig | null>(null)
   const [maimMessageConfig, setMaimMessageConfig] = useState<MaimMessageConfig | null>(null)
   const [telemetryConfig, setTelemetryConfig] = useState<TelemetryConfig | null>(null)
+  const [webuiConfig, setWebuiConfig] = useState<WebUIConfig | null>(null)
 
   // 用于标记初始加载和配置缓存
   const initialLoadRef = useRef(true)
@@ -142,6 +145,7 @@ function BotConfigPageContent() {
     setDebugConfig(config.debug as DebugConfig)
     setMaimMessageConfig(config.maim_message as MaimMessageConfig)
     setTelemetryConfig(config.telemetry as TelemetryConfig)
+    setWebuiConfig(config.webui as WebUIConfig)
   }, [])
 
   /**
@@ -168,13 +172,14 @@ function BotConfigPageContent() {
       debug: debugConfig,
       maim_message: maimMessageConfig,
       telemetry: telemetryConfig,
+      webui: webuiConfig,
     }
   }, [
     botConfig, personalityConfig, chatConfig, expressionConfig,
     emojiConfig, memoryConfig, toolConfig,
     voiceConfig, lpmmConfig, keywordReactionConfig, responsePostProcessConfig,
     chineseTypoConfig, responseSplitterConfig, logConfig, debugConfig,
-    maimMessageConfig, telemetryConfig
+    maimMessageConfig, telemetryConfig, webuiConfig
   ])
 
   // 加载源代码
@@ -257,6 +262,7 @@ function BotConfigPageContent() {
   useConfigAutoSave(debugConfig, 'debug', initialLoadRef.current, triggerAutoSave)
   useConfigAutoSave(maimMessageConfig, 'maim_message', initialLoadRef.current, triggerAutoSave)
   useConfigAutoSave(telemetryConfig, 'telemetry', initialLoadRef.current, triggerAutoSave)
+  useConfigAutoSave(webuiConfig, 'webui', initialLoadRef.current, triggerAutoSave)
 
   // 保存源代码
   const saveSourceCode = async () => {
@@ -519,7 +525,7 @@ function BotConfigPageContent() {
           <>
         {/* 标签页 */}
         <Tabs defaultValue="bot" className="w-full">
-          <TabsList className="flex flex-wrap h-auto gap-1 p-1 sm:grid sm:grid-cols-5 lg:grid-cols-9">
+          <TabsList className="flex flex-wrap h-auto gap-1 p-1 sm:grid sm:grid-cols-5 lg:grid-cols-10">
             <TabsTrigger value="bot" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">基本信息</TabsTrigger>
             <TabsTrigger value="personality" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">人格</TabsTrigger>
             <TabsTrigger value="chat" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">聊天</TabsTrigger>
@@ -528,6 +534,7 @@ function BotConfigPageContent() {
             <TabsTrigger value="processing" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">处理</TabsTrigger>
             <TabsTrigger value="voice" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">语音</TabsTrigger>
             <TabsTrigger value="lpmm" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">知识库</TabsTrigger>
+            <TabsTrigger value="webui" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">WebUI</TabsTrigger>
             <TabsTrigger value="other" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">其他</TabsTrigger>
           </TabsList>
           {/* 基本信息 */}
@@ -592,6 +599,11 @@ function BotConfigPageContent() {
         {/* 知识库配置 */}
         <TabsContent value="lpmm" className="space-y-4">
           {lpmmConfig && <LPMMSection config={lpmmConfig} onChange={setLpmmConfig} />}
+        </TabsContent>
+
+        {/* WebUI 配置 */}
+        <TabsContent value="webui" className="space-y-4">
+          {webuiConfig && <WebUISection config={webuiConfig} onChange={setWebuiConfig} />}
         </TabsContent>
 
         {/* 其他配置 */}

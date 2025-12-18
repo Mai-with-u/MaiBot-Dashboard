@@ -788,8 +788,9 @@ export const ExpressionSection = React.memo(function ExpressionSection({
 
       {/* 黑话设置 */}
       <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-4">
+        <h3 className="text-lg font-semibold mb-4">黑话设置</h3>
+        
         <div>
-          <h3 className="text-lg font-semibold mb-4">黑话设置</h3>
           <div className="flex items-center space-x-2">
             <Switch
               id="all_global_jargon"
@@ -804,6 +805,44 @@ export const ExpressionSection = React.memo(function ExpressionSection({
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             开启后，新增的黑话将默认设为全局（所有聊天流共享）。关闭后，已记录的全局黑话不会改变，需要手动删除。
+          </p>
+        </div>
+
+        <div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="enable_jargon_explanation"
+              checked={config.enable_jargon_explanation ?? true}
+              onCheckedChange={(checked) =>
+                onChange({ ...config, enable_jargon_explanation: checked })
+              }
+            />
+            <Label htmlFor="enable_jargon_explanation" className="cursor-pointer">
+              启用黑话解释
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            在回复前尝试对上下文中的黑话进行解释。关闭可减少一次LLM调用，仅影响回复前的黑话匹配与解释，不影响黑话学习。
+          </p>
+        </div>
+
+        <div>
+          <Label htmlFor="jargon_mode">黑话解释来源模式</Label>
+          <Select
+            value={config.jargon_mode ?? 'context'}
+            onValueChange={(value) => onChange({ ...config, jargon_mode: value })}
+          >
+            <SelectTrigger id="jargon_mode" className="mt-2">
+              <SelectValue placeholder="选择黑话解释来源" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="context">上下文模式（自动匹配黑话）</SelectItem>
+              <SelectItem value="planner">Planner模式（使用unknown_words列表）</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-2">
+            上下文模式：使用上下文自动匹配黑话并解释<br />
+            Planner模式：仅使用Planner在reply动作中给出的unknown_words列表进行黑话检索
           </p>
         </div>
       </div>

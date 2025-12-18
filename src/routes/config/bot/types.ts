@@ -42,6 +42,8 @@ export interface ExpressionConfig {
   reflect_operator_id: string
   allow_reflect: string[]
   all_global_jargon: boolean
+  enable_jargon_explanation: boolean
+  jargon_mode: string
 }
 
 export interface EmojiConfig {
@@ -85,6 +87,10 @@ export interface LPMMKnowledgeConfig {
   qa_ppr_damping: number
   qa_res_top_k: number
   embedding_dimension: number
+  max_embedding_workers: number
+  embedding_chunk_size: number
+  max_synonym_entities: number
+  enable_ppr: boolean
 }
 
 export interface KeywordRule {
@@ -141,17 +147,32 @@ export interface DebugConfig {
 
 export interface MaimMessageConfig {
   auth_token: string[]
-  use_custom: boolean
-  host: string
-  port: number
-  mode: string
-  use_wss: boolean
-  cert_file: string
-  key_file: string
+  enable_api_server: boolean
+  api_server_host: string
+  api_server_port: number
+  api_server_use_wss: boolean
+  api_server_cert_file: string
+  api_server_key_file: string
+  api_server_allowed_api_keys: string[]
 }
 
 export interface TelemetryConfig {
   enable: boolean
+}
+
+/**
+ * WebUI 配置
+ */
+export interface WebUIConfig {
+  enabled: boolean
+  mode: string
+  host: string
+  port: number
+  anti_crawler_mode: string
+  allowed_ips: string
+  trusted_proxies: string
+  trust_xff: boolean
+  secure_cookie: boolean
 }
 
 /**
@@ -198,3 +219,4 @@ export type ConfigSectionName =
   | 'debug'
   | 'maim_message'
   | 'telemetry'
+  | 'webui'

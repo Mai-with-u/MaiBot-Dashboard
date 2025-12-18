@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -46,7 +46,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Pencil, Trash2, Save, Search, Info, Power, Check, ChevronsUpDown, RefreshCw, Loader2, GraduationCap, Share2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Save, Search, Info, Power, Check, ChevronsUpDown, RefreshCw, Loader2, GraduationCap, Share2, AlertTriangle } from 'lucide-react'
 import { getModelConfig, updateModelConfig } from '@/lib/config-api'
 import { useToast } from '@/hooks/use-toast'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -95,6 +95,11 @@ function ModelConfigPageContent() {
   // 模型 Combobox 状态
   const [modelComboboxOpen, setModelComboboxOpen] = useState(false)
   
+  // 嵌入模型警告相关状态
+  const [embeddingWarningOpen, setEmbeddingWarningOpen] = useState(false)
+  const previousEmbeddingModelsRef = useRef<string[]>([])
+  const pendingEmbeddingUpdateRef = useRef<{ field: keyof TaskConfig; value: string[] | number } | null>(null)
+  
   // 表单验证错误状态
   const [formErrors, setFormErrors] = useState<{
     name?: string
@@ -132,6 +137,9 @@ function ModelConfigPageContent() {
       setProviderConfigs(providerList)
       
       setTaskConfig((config.model_task_config as ModelTaskConfig) || null)
+      // 初始化上一次的 embedding 模型列表
+      const embeddingModels = (config.model_task_config as ModelTaskConfig)?.embedding?.model_list || []
+      previousEmbeddingModelsRef.current = [...embeddingModels]
       setHasUnsavedChanges(false)
       initialLoadRef.current = false
     } catch (error) {
@@ -453,6 +461,28 @@ function ModelConfigPageContent() {
     value: string[] | number
   ) => {
     if (!taskConfig) return
+    
+    // 检测 embedding 模型列表变化
+    if (taskName === 'embedding' && field === 'model_list' && Array.isArray(value)) {
+      const previousModels = previousEmbeddingModelsRef.current
+      const newModels = value as string[]
+      
+      // 判断是否有变化（添加、删除或替换）
+      const hasChanges = 
+        previousModels.length !== newModels.length ||
+        previousModels.some(model => !newModels.includes(model)) ||
+        newModels.some(model => !previousModels.includes(model))
+      
+      if (hasChanges && previousModels.length > 0) {
+        // 存储待更新的配置
+        pendingEmbeddingUpdateRef.current = { field, value }
+        // 显示警告对话框
+        setEmbeddingWarningOpen(true)
+        return
+      }
+    }
+    
+    // 正常更新配置
     setTaskConfig({
       ...taskConfig,
       [taskName]: {
@@ -460,6 +490,46 @@ function ModelConfigPageContent() {
         [field]: value,
       },
     })
+    
+    // 如果是 embedding 模型列表，更新 ref
+    if (taskName === 'embedding' && field === 'model_list' && Array.isArray(value)) {
+      previousEmbeddingModelsRef.current = [...(value as string[])]
+    }
+  }
+  
+  // 确认更新嵌入模型
+  const handleConfirmEmbeddingChange = () => {
+    if (!taskConfig || !pendingEmbeddingUpdateRef.current) return
+    
+    const { field, value } = pendingEmbeddingUpdateRef.current
+    
+    setTaskConfig({
+      ...taskConfig,
+      embedding: {
+        ...taskConfig.embedding,
+        [field]: value,
+      },
+    })
+    
+    // 更新 ref
+    if (field === 'model_list' && Array.isArray(value)) {
+      previousEmbeddingModelsRef.current = [...(value as string[])]
+    }
+    
+    // 清理
+    pendingEmbeddingUpdateRef.current = null
+    setEmbeddingWarningOpen(false)
+    
+    toast({
+      title: '嵌入模型已更新',
+      description: '建议重新生成知识库向量以确保最佳匹配精度',
+    })
+  }
+  
+  // 取消更新嵌入模型
+  const handleCancelEmbeddingChange = () => {
+    pendingEmbeddingUpdateRef.current = null
+    setEmbeddingWarningOpen(false)
   }
 
   // 过滤模型列表
@@ -1276,6 +1346,42 @@ function ModelConfigPageContent() {
             <AlertDialogCancel>取消</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmBatchDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               批量删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 嵌入模型更换警告对话框 */}
+      <AlertDialog open={embeddingWarningOpen} onOpenChange={setEmbeddingWarningOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              更换嵌入模型警告
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <p>
+                  <strong className="text-foreground">注意：</strong>更换嵌入模型可能会影响知识库的匹配精度！
+                </p>
+                <ul className="space-y-2 ml-4 list-disc text-muted-foreground">
+                  <li>不同的嵌入模型会产生不同的向量表示</li>
+                  <li>这可能导致现有知识库的检索结果不准确</li>
+                  <li>建议更换嵌入模型后重新生成所有知识库的向量</li>
+                </ul>
+                <p className="text-foreground font-medium">
+                  确定要更换嵌入模型吗？
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelEmbeddingChange}>取消</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmEmbeddingChange}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              确认更换
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

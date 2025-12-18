@@ -97,6 +97,50 @@ export const LPMMSection = React.memo(function LPMMSection({ config, onChange }:
                   }
                 />
               </div>
+
+              <div className="grid gap-2">
+                <Label>嵌入并发线程数</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={config.max_embedding_workers}
+                  onChange={(e) =>
+                    onChange({ ...config, max_embedding_workers: parseInt(e.target.value) })
+                  }
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label>每批嵌入条数</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={config.embedding_chunk_size}
+                  onChange={(e) =>
+                    onChange({ ...config, embedding_chunk_size: parseInt(e.target.value) })
+                  }
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label>同义实体数上限</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={config.max_synonym_entities}
+                  onChange={(e) =>
+                    onChange({ ...config, max_synonym_entities: parseInt(e.target.value) })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={config.enable_ppr}
+                onCheckedChange={(checked) => onChange({ ...config, enable_ppr: checked })}
+              />
+              <Label className="cursor-pointer">启用 PPR (低配机器可关闭)</Label>
             </div>
           </>
         )}
