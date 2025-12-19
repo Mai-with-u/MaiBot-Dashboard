@@ -848,7 +848,6 @@ function PersonEditDialog({
         person_name: person.person_name || '',
         name_reason: person.name_reason || '',
         nickname: person.nickname || '',
-        memory_points: person.memory_points || '',
         is_known: person.is_known,
       })
     }
@@ -918,17 +917,6 @@ function PersonEditDialog({
               onChange={(e) => setFormData({ ...formData, name_reason: e.target.value })}
               placeholder="为什么这样称呼这个人？"
               rows={2}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="memory_points">个人印象</Label>
-            <Textarea
-              id="memory_points"
-              value={formData.memory_points || ''}
-              onChange={(e) => setFormData({ ...formData, memory_points: e.target.value })}
-              placeholder="对这个人的印象和记忆点..."
-              rows={4}
             />
           </div>
 
