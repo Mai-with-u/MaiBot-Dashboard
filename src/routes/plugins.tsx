@@ -73,7 +73,6 @@ export function PluginsPage() {
 function PluginsPageContent() {
   const navigate = useNavigate()
   const { triggerRestart, isRestarting } = useRestart()
-  const [selectedPlugin, setSelectedPlugin] = useState<PluginInfo | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [activeTab, setActiveTab] = useState('all')  // all | installed | updates
@@ -921,7 +920,7 @@ function PluginsPageContent() {
                   <Button 
                     variant="outline"
                     size="sm"
-                    onClick={() => setSelectedPlugin(plugin)}
+                    onClick={() => navigate({ to: '/plugin-detail', search: { pluginId: plugin.id } })}
                   >
                     查看详情
                   </Button>
@@ -1049,172 +1048,6 @@ function PluginsPageContent() {
           ))}
           </div>
         )}
-
-        {/* 插件详情对话框 */}
-        <Dialog open={selectedPlugin !== null} onOpenChange={closeDialog}>
-          {selectedPlugin && selectedPlugin.manifest && (
-            <DialogContent className="max-w-2xl max-h-[80vh] p-0 flex flex-col">
-              <ScrollArea className="flex-1 overflow-auto">
-                <div className="p-6">
-              <DialogHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-2 flex-1">
-                    <DialogTitle className="text-2xl">{selectedPlugin.manifest.name}</DialogTitle>
-                    <DialogDescription>
-                      作者: {selectedPlugin.manifest.author?.name || 'Unknown'}
-                      {selectedPlugin.manifest.author?.url && (
-                        <a
-                          href={selectedPlugin.manifest.author.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-2 text-primary hover:underline"
-                        >
-                          <ExternalLink className="h-3 w-3 inline" />
-                        </a>
-                      )}
-                    </DialogDescription>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {selectedPlugin.manifest.categories && selectedPlugin.manifest.categories[0] && (
-                      <Badge variant="secondary">{CATEGORY_NAMES[selectedPlugin.manifest.categories[0]] || selectedPlugin.manifest.categories[0]}</Badge>
-                    )}
-                    {getStatusBadge(selectedPlugin)}
-                  </div>
-                </div>
-              </DialogHeader>
-
-              <div className="space-y-6">
-                {/* 插件统计 */}
-                <PluginStats pluginId={selectedPlugin.id} />
-
-                {/* 基本信息 */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-sm font-medium">版本</p>
-                    <p className="text-sm text-muted-foreground">v{selectedPlugin.manifest?.version || 'unknown'}</p>
-                    {selectedPlugin.installed && selectedPlugin.installed_version && (
-                      <p className="text-xs text-muted-foreground">
-                        已安装: v{selectedPlugin.installed_version}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">下载量</p>
-                    <p className="text-sm text-muted-foreground">
-                      {(pluginStats[selectedPlugin.id]?.downloads ?? selectedPlugin.downloads ?? 0).toLocaleString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">评分</p>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm text-muted-foreground">
-                        {(pluginStats[selectedPlugin.id]?.rating ?? selectedPlugin.rating ?? 0).toFixed(1)} ({pluginStats[selectedPlugin.id]?.rating_count ?? selectedPlugin.review_count ?? 0})
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">许可证</p>
-                    <p className="text-sm text-muted-foreground">{selectedPlugin.manifest.license || 'Unknown'}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-sm font-medium">支持版本</p>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedPlugin.manifest.host_application?.min_version || '未知'}
-                      {selectedPlugin.manifest.host_application?.max_version 
-                        ? ` - ${selectedPlugin.manifest.host_application.max_version}`
-                        : ' - 最新版本'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* 标签 */}
-                <div>
-                  <p className="text-sm font-medium mb-2">关键词</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedPlugin.manifest.keywords && selectedPlugin.manifest.keywords.map((keyword) => (
-                      <Badge key={keyword} variant="outline">
-                        {keyword}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 详细描述 */}
-                {selectedPlugin.detailed_description && (
-                  <div>
-                    <p className="text-sm font-medium mb-2">详细说明</p>
-                    <p className="text-sm text-muted-foreground whitespace-pre-line">
-                      {selectedPlugin.detailed_description}
-                    </p>
-                  </div>
-                )}
-
-                {/* 描述（如果没有详细描述） */}
-                {!selectedPlugin.detailed_description && (
-                  <div>
-                    <p className="text-sm font-medium mb-2">说明</p>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedPlugin.manifest.description || '无描述'}
-                    </p>
-                  </div>
-                )}
-
-                {/* 链接 */}
-                <div className="space-y-2">
-                  {selectedPlugin.manifest.homepage_url && (
-                    <div className="text-sm">
-                      <span className="font-medium">主页: </span>
-                      <a
-                        href={selectedPlugin.manifest.homepage_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        {selectedPlugin.manifest.homepage_url}
-                      </a>
-                    </div>
-                  )}
-                  {selectedPlugin.manifest.repository_url && (
-                    <div className="text-sm">
-                      <span className="font-medium">仓库: </span>
-                      <a
-                        href={selectedPlugin.manifest.repository_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        {selectedPlugin.manifest.repository_url}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <DialogFooter>
-                {selectedPlugin.manifest.homepage_url && (
-                  <Button
-                    onClick={() => window.open(selectedPlugin.manifest.homepage_url, '_blank')}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    访问主页
-                  </Button>
-                )}
-                {selectedPlugin.manifest.repository_url && (
-                  <Button
-                    variant="outline"
-                    onClick={() => window.open(selectedPlugin.manifest.repository_url, '_blank')}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    查看仓库
-                  </Button>
-                )}
-              </DialogFooter>
-                </div>
-              </ScrollArea>
-            </DialogContent>
-          )}
-        </Dialog>
 
         {/* 安装对话框 */}
         <Dialog open={installDialogOpen} onOpenChange={setInstallDialogOpen}>

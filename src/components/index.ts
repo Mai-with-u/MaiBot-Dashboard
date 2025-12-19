@@ -8,3 +8,6 @@ export { RestartingOverlay } from './RestartingOverlay.legacy'
 
 // 列表编辑器
 export { ListFieldEditor } from './ListFieldEditor'
+
+// Markdown 渲染器
+export { MarkdownRenderer } from './markdown-renderer'

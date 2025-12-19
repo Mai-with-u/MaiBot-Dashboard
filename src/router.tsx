@@ -20,6 +20,7 @@ import { PluginsPage } from './routes/plugins'
 import { ModelPresetsPage } from './routes/model-presets'
 import { PluginConfigPage } from './routes/plugin-config'
 import { PluginMirrorsPage } from './routes/plugin-mirrors'
+import { PluginDetailPage } from './routes/plugin-detail'
 import { ChatPage } from './routes/chat'
 import { WebUIFeedbackSurveyPage, MaiBotFeedbackSurveyPage } from './routes/survey'
 import PackMarketPage from './routes/config/pack-market'
@@ -168,6 +169,13 @@ const pluginsRoute = createRoute({
   component: PluginsPage,
 })
 
+// 插件详情路由
+const pluginDetailRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/plugin-detail',
+  component: PluginDetailPage,
+})
+
 // 模型分配预设市场路由
 const modelPresetsRoute = createRoute({
   getParentRoute: () => protectedRoute,
@@ -248,6 +256,7 @@ const routeTree = rootRoute.addChildren([
     knowledgeGraphRoute,
     knowledgeBaseRoute,
     pluginsRoute,
+    pluginDetailRoute,
     modelPresetsRoute,
     pluginConfigRoute,
     pluginMirrorsRoute,
