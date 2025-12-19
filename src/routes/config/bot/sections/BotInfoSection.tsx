@@ -22,36 +22,40 @@ interface BotInfoSectionProps {
 }
 
 export const BotInfoSection = React.memo(function BotInfoSection({ config, onChange }: BotInfoSectionProps) {
+  // 确保 platforms 和 alias_names 始终是数组
+  const platforms = config.platforms || []
+  const aliasNames = config.alias_names || []
+
   const addPlatform = () => {
-    onChange({ ...config, platforms: [...config.platforms, ''] })
+    onChange({ ...config, platforms: [...platforms, ''] })
   }
 
   const removePlatform = (index: number) => {
     onChange({
       ...config,
-      platforms: config.platforms.filter((_, i) => i !== index),
+      platforms: platforms.filter((_, i) => i !== index),
     })
   }
 
   const updatePlatform = (index: number, value: string) => {
-    const newPlatforms = [...config.platforms]
+    const newPlatforms = [...platforms]
     newPlatforms[index] = value
     onChange({ ...config, platforms: newPlatforms })
   }
 
   const addAlias = () => {
-    onChange({ ...config, alias_names: [...config.alias_names, ''] })
+    onChange({ ...config, alias_names: [...aliasNames, ''] })
   }
 
   const removeAlias = (index: number) => {
     onChange({
       ...config,
-      alias_names: config.alias_names.filter((_, i) => i !== index),
+      alias_names: aliasNames.filter((_, i) => i !== index),
     })
   }
 
   const updateAlias = (index: number, value: string) => {
-    const newAliases = [...config.alias_names]
+    const newAliases = [...aliasNames]
     newAliases[index] = value
     onChange({ ...config, alias_names: newAliases })
   }
@@ -101,7 +105,7 @@ export const BotInfoSection = React.memo(function BotInfoSection({ config, onCha
               </Button>
             </div>
             <div className="space-y-2">
-              {config.platforms.map((platform, index) => (
+              {platforms.map((platform, index) => (
                 <div key={index} className="flex gap-2">
                   <Input
                     value={platform}
@@ -131,7 +135,7 @@ export const BotInfoSection = React.memo(function BotInfoSection({ config, onCha
                   </AlertDialog>
                 </div>
               ))}
-              {config.platforms.length === 0 && (
+              {platforms.length === 0 && (
                 <p className="text-sm text-muted-foreground">暂无其他平台账号</p>
               )}
             </div>
@@ -146,7 +150,7 @@ export const BotInfoSection = React.memo(function BotInfoSection({ config, onCha
               </Button>
             </div>
             <div className="space-y-2">
-              {config.alias_names.map((alias, index) => (
+              {aliasNames.map((alias, index) => (
                 <div key={index} className="flex gap-2">
                   <Input
                     value={alias}
@@ -176,7 +180,7 @@ export const BotInfoSection = React.memo(function BotInfoSection({ config, onCha
                   </AlertDialog>
                 </div>
               ))}
-              {config.alias_names.length === 0 && (
+              {aliasNames.length === 0 && (
                 <p className="text-sm text-muted-foreground">暂无别名</p>
               )}
             </div>

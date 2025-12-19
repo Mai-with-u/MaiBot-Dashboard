@@ -366,6 +366,12 @@ function ModelConfigPageContent() {
     setEditDialogOpen(false)
     setEditingModel(null)
     setEditingIndex(null)
+    
+    // 提示用户配置将自动保存
+    toast({
+      title: editingIndex !== null ? '模型已更新' : '模型已添加',
+      description: '配置将在 2 秒后自动保存，或点击右上角"保存配置"按钮立即保存',
+    })
   }
 
   // 处理编辑对话框关闭
@@ -397,7 +403,7 @@ function ModelConfigPageContent() {
       setModelNames(newModels.map((m) => m.name))
       toast({
         title: '删除成功',
-        description: '模型已从列表中移除',
+        description: '配置将在 2 秒后自动保存，或点击右上角"保存配置"按钮立即保存',
       })
     }
     setDeleteDialogOpen(false)
@@ -442,6 +448,7 @@ function ModelConfigPageContent() {
 
   // 确认批量删除
   const handleConfirmBatchDelete = () => {
+    const deletedCount = selectedModels.size
     const newModels = models.filter((_, index) => !selectedModels.has(index))
     setModels(newModels)
     // 立即更新模型名称列表
@@ -450,7 +457,7 @@ function ModelConfigPageContent() {
     setBatchDeleteDialogOpen(false)
     toast({
       title: '批量删除成功',
-      description: `已删除 ${selectedModels.size} 个模型`,
+      description: `已删除 ${deletedCount} 个模型，配置将在 2 秒后自动保存`,
     })
   }
 
