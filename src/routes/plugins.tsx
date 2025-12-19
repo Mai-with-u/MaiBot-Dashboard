@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Search, Download, Star, ExternalLink, CheckCircle2, AlertCircle, Loader2, AlertTriangle, RefreshCw, Trash2, Settings2, RotateCw, Info } from 'lucide-react'
+import { Search, Download, Star, CheckCircle2, AlertCircle, Loader2, AlertTriangle, RefreshCw, Trash2, Settings2, RotateCw, Info } from 'lucide-react'
 import type { PluginInfo } from '@/types/plugin'
 import { RestartProvider, useRestart } from '@/lib/restart-context'
 import { RestartOverlay } from '@/components/restart-overlay'
@@ -45,7 +45,6 @@ import {
 } from '@/lib/plugin-api'
 import { useToast } from '@/hooks/use-toast'
 import { Progress } from '@/components/ui/progress'
-import { PluginStats } from '@/components/plugin-stats'
 import { recordPluginDownload, getPluginStats, type PluginStatsData } from '@/lib/plugin-stats'
 
 // 分类名称映射
@@ -417,11 +416,6 @@ function PluginsPageContent() {
     
     return matchesSearch && matchesCategory && matchesTab && matchesCompatibility
   })
-
-  // 关闭对话框
-  const closeDialog = () => {
-    setSelectedPlugin(null)
-  }
 
   // 打开安装对话框
   const openInstallDialog = (plugin: PluginInfo) => {
