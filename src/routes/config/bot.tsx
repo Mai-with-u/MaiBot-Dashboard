@@ -3,7 +3,7 @@ import {
   BotInfoSection,
   PersonalitySection,
   ChatSection,
-  VoiceSection,
+  DreamSection,
   LPMMSection,
   LogSection,
   DebugSection,
@@ -45,6 +45,7 @@ import type {
   MemoryConfig,
   ToolConfig,
   VoiceConfig,
+  DreamConfig,
   LPMMKnowledgeConfig,
   KeywordReactionConfig,
   ResponsePostProcessConfig,
@@ -97,6 +98,7 @@ function BotConfigPageContent() {
   const [memoryConfig, setMemoryConfig] = useState<MemoryConfig | null>(null)
   const [toolConfig, setToolConfig] = useState<ToolConfig | null>(null)
   const [voiceConfig, setVoiceConfig] = useState<VoiceConfig | null>(null)
+  const [dreamConfig, setDreamConfig] = useState<DreamConfig | null>(null)
   const [lpmmConfig, setLpmmConfig] = useState<LPMMKnowledgeConfig | null>(null)
   const [keywordReactionConfig, setKeywordReactionConfig] = useState<KeywordReactionConfig | null>(null)
   const [responsePostProcessConfig, setResponsePostProcessConfig] = useState<ResponsePostProcessConfig | null>(null)
@@ -136,6 +138,7 @@ function BotConfigPageContent() {
     setMemoryConfig(config.memory as MemoryConfig)
     setToolConfig(config.tool as ToolConfig)
     setVoiceConfig(config.voice as VoiceConfig)
+    setDreamConfig(config.dream as DreamConfig)
     setLpmmConfig(config.lpmm_knowledge as LPMMKnowledgeConfig)
     setKeywordReactionConfig(config.keyword_reaction as KeywordReactionConfig)
     setResponsePostProcessConfig(config.response_post_process as ResponsePostProcessConfig)
@@ -163,6 +166,7 @@ function BotConfigPageContent() {
       memory: memoryConfig,
       tool: toolConfig,
       voice: voiceConfig,
+      dream: dreamConfig,
       lpmm_knowledge: lpmmConfig,
       keyword_reaction: keywordReactionConfig,
       response_post_process: responsePostProcessConfig,
@@ -177,7 +181,7 @@ function BotConfigPageContent() {
   }, [
     botConfig, personalityConfig, chatConfig, expressionConfig,
     emojiConfig, memoryConfig, toolConfig,
-    voiceConfig, lpmmConfig, keywordReactionConfig, responsePostProcessConfig,
+    voiceConfig, dreamConfig, lpmmConfig, keywordReactionConfig, responsePostProcessConfig,
     chineseTypoConfig, responseSplitterConfig, logConfig, debugConfig,
     maimMessageConfig, telemetryConfig, webuiConfig
   ])
@@ -532,7 +536,7 @@ function BotConfigPageContent() {
             <TabsTrigger value="expression" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">表达</TabsTrigger>
             <TabsTrigger value="features" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">功能</TabsTrigger>
             <TabsTrigger value="processing" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">处理</TabsTrigger>
-            <TabsTrigger value="voice" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">语音</TabsTrigger>
+            <TabsTrigger value="dream" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">做梦</TabsTrigger>
             <TabsTrigger value="lpmm" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">知识库</TabsTrigger>
             <TabsTrigger value="webui" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">WebUI</TabsTrigger>
             <TabsTrigger value="other" className="text-xs px-2 py-1.5 sm:px-3 sm:py-2 data-[state=active]:shadow-sm">其他</TabsTrigger>
@@ -563,14 +567,16 @@ function BotConfigPageContent() {
 
         {/* 功能配置（合并表情、记忆、工具） */}
         <TabsContent value="features" className="space-y-4">
-          {emojiConfig && memoryConfig && toolConfig && (
+          {emojiConfig && memoryConfig && toolConfig && voiceConfig && (
             <FeaturesSection
               emojiConfig={emojiConfig}
               memoryConfig={memoryConfig}
               toolConfig={toolConfig}
+              voiceConfig={voiceConfig}
               onEmojiChange={setEmojiConfig}
               onMemoryChange={setMemoryConfig}
               onToolChange={setToolConfig}
+              onVoiceChange={setVoiceConfig}
             />
           )}
         </TabsContent>
@@ -591,9 +597,9 @@ function BotConfigPageContent() {
           )}
         </TabsContent>
 
-        {/* 语音配置 */}
-        <TabsContent value="voice" className="space-y-4">
-          {voiceConfig && <VoiceSection config={voiceConfig} onChange={setVoiceConfig} />}
+        {/* 做梦配置 */}
+        <TabsContent value="dream" className="space-y-4">
+          {dreamConfig && <DreamSection config={dreamConfig} onChange={setDreamConfig} />}
         </TabsContent>
 
         {/* 知识库配置 */}

@@ -2,24 +2,28 @@ import React from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import type { EmojiConfig, MemoryConfig, ToolConfig } from '../types'
+import type { EmojiConfig, MemoryConfig, ToolConfig, VoiceConfig } from '../types'
 
 interface FeaturesSectionProps {
   emojiConfig: EmojiConfig
   memoryConfig: MemoryConfig
   toolConfig: ToolConfig
+  voiceConfig: VoiceConfig
   onEmojiChange: (config: EmojiConfig) => void
   onMemoryChange: (config: MemoryConfig) => void
   onToolChange: (config: ToolConfig) => void
+  onVoiceChange: (config: VoiceConfig) => void
 }
 
 export const FeaturesSection = React.memo(function FeaturesSection({
   emojiConfig,
   memoryConfig,
   toolConfig,
+  voiceConfig,
   onEmojiChange,
   onMemoryChange,
   onToolChange,
+  onVoiceChange,
 }: FeaturesSectionProps) {
   return (
     <div className="space-y-6">
@@ -27,19 +31,35 @@ export const FeaturesSection = React.memo(function FeaturesSection({
       <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-4">
         <div>
           <h3 className="text-lg font-semibold mb-4">工具设置</h3>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="enable_tool"
-              checked={toolConfig.enable_tool}
-              onCheckedChange={(checked) => onToolChange({ ...toolConfig, enable_tool: checked })}
-            />
-            <Label htmlFor="enable_tool" className="cursor-pointer">
-              启用工具系统
-            </Label>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="enable_tool"
+                checked={toolConfig.enable_tool}
+                onCheckedChange={(checked) => onToolChange({ ...toolConfig, enable_tool: checked })}
+              />
+              <Label htmlFor="enable_tool" className="cursor-pointer">
+                启用工具系统
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-2">
+              允许麦麦使用各种工具来增强功能
+            </p>
+
+            <div className="flex items-center space-x-2 pt-2">
+              <Switch
+                id="enable_asr"
+                checked={voiceConfig.enable_asr}
+                onCheckedChange={(checked) => onVoiceChange({ ...voiceConfig, enable_asr: checked })}
+              />
+              <Label htmlFor="enable_asr" className="cursor-pointer">
+                启用语音识别
+              </Label>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-2">
+              启用后麦麦可以识别语音消息，需要配置语音识别模型
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            允许麦麦使用各种工具来增强功能
-          </p>
         </div>
       </div>
 

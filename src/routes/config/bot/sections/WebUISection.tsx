@@ -102,61 +102,44 @@ export const WebUISection = React.memo(function WebUISection({ config, onChange 
 
         {config.enabled && (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>运行模式</Label>
-                <Select
-                  value={config.mode}
-                  onValueChange={(value) => onChange({ ...config, mode: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择运行模式" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="development">开发模式</SelectItem>
-                    <SelectItem value="production">生产模式</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="grid gap-2">
+              <Label>运行模式</Label>
+              <Select
+                value={config.mode}
+                onValueChange={(value) => onChange({ ...config, mode: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择运行模式" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="development">开发模式</SelectItem>
+                  <SelectItem value="production">生产模式</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                注意: WebUI 的监听地址和端口请在 .env 文件中配置 WEBUI_HOST 和 WEBUI_PORT
+              </p>
+            </div>
 
-              <div className="grid gap-2">
-                <Label>监听地址</Label>
-                <Input
-                  value={config.host}
-                  onChange={(e) => onChange({ ...config, host: e.target.value })}
-                  placeholder="0.0.0.0"
-                />
-              </div>
+            <div className="grid gap-2">
+              <Label>防爬虫模式</Label>
+              <Select
+                value={config.anti_crawler_mode}
+                onValueChange={(value) => onChange({ ...config, anti_crawler_mode: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择防爬虫模式" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="false">禁用</SelectItem>
+                  <SelectItem value="basic">基础（只记录不阻止）</SelectItem>
+                  <SelectItem value="loose">宽松</SelectItem>
+                  <SelectItem value="strict">严格</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="grid gap-2">
-                <Label>端口号</Label>
-                <Input
-                  type="number"
-                  value={config.port}
-                  onChange={(e) => onChange({ ...config, port: parseInt(e.target.value) })}
-                  placeholder="8001"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label>防爬虫模式</Label>
-                <Select
-                  value={config.anti_crawler_mode}
-                  onValueChange={(value) => onChange({ ...config, anti_crawler_mode: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择防爬虫模式" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="false">禁用</SelectItem>
-                    <SelectItem value="basic">基础（只记录不阻止）</SelectItem>
-                    <SelectItem value="loose">宽松</SelectItem>
-                    <SelectItem value="strict">严格</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2 sm:col-span-2">
+            <div className="grid gap-2 sm:col-span-2">
                 <Label>IP 白名单</Label>
                 <div className="flex gap-2">
                   <Input
@@ -243,7 +226,6 @@ export const WebUISection = React.memo(function WebUISection({ config, onChange 
                   只有来自这些IP的X-Forwarded-For头才被信任
                 </p>
               </div>
-            </div>
 
             <div className="flex items-center space-x-2">
               <Switch

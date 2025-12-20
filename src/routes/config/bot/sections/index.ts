@@ -5,7 +5,7 @@
 export { BotInfoSection } from './BotInfoSection'
 export { PersonalitySection } from './PersonalitySection'
 export { ChatSection } from './ChatSection'
-export { VoiceSection } from './VoiceSection'
+export { DreamSection } from './DreamSection'
 export { LPMMSection } from './LPMMSection'
 export { LogSection } from './LogSection'
 export { DebugSection } from './DebugSection'

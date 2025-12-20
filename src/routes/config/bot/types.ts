@@ -73,6 +73,14 @@ export interface VoiceConfig {
   enable_asr: boolean
 }
 
+export interface DreamConfig {
+  interval_minutes: number
+  max_iterations: number
+  first_delay_seconds: number
+  dream_send: string
+  dream_time_ranges: string[]
+}
+
 export interface LPMMKnowledgeConfig {
   enable: boolean
   lpmm_mode: string
@@ -162,12 +170,11 @@ export interface TelemetryConfig {
 
 /**
  * WebUI 配置
+ * 注意: host 和 port 配置已移至环境变量 WEBUI_HOST 和 WEBUI_PORT
  */
 export interface WebUIConfig {
   enabled: boolean
   mode: string
-  host: string
-  port: number
   anti_crawler_mode: string
   allowed_ips: string
   trusted_proxies: string
@@ -187,6 +194,7 @@ export interface AllBotConfigs {
   memoryConfig: MemoryConfig | null
   toolConfig: ToolConfig | null
   voiceConfig: VoiceConfig | null
+  dreamConfig: DreamConfig | null
   lpmmConfig: LPMMKnowledgeConfig | null
   keywordReactionConfig: KeywordReactionConfig | null
   responsePostProcessConfig: ResponsePostProcessConfig | null
@@ -210,6 +218,7 @@ export type ConfigSectionName =
   | 'memory'
   | 'tool'
   | 'voice'
+  | 'dream'
   | 'lpmm_knowledge'
   | 'keyword_reaction'
   | 'response_post_process'
