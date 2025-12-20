@@ -100,6 +100,10 @@ function ModelConfigPageContent() {
   const previousEmbeddingModelsRef = useRef<string[]>([])
   const pendingEmbeddingUpdateRef = useRef<{ field: keyof TaskConfig; value: string[] | number } | null>(null)
   
+  // 任务配置问题检查状态
+  const [invalidModelRefs, setInvalidModelRefs] = useState<{ taskName: string; invalidModels: string[] }[]>([])
+  const [emptyTasks, setEmptyTasks] = useState<string[]>([])
+  
   // 表单验证错误状态
   const [formErrors, setFormErrors] = useState<{
     name?: string
@@ -123,6 +127,49 @@ function ModelConfigPageContent() {
     onUnsavedChange: setHasUnsavedChanges,
   })
 
+  // 检查任务配置问题
+  const checkTaskConfigIssues = useCallback((taskConf: ModelTaskConfig | null, modelList: ModelInfo[]) => {
+    if (!taskConf) return
+    
+    const modelNameSet = new Set(modelList.map(m => m.name))
+    const invalidRefs: { taskName: string; invalidModels: string[] }[] = []
+    const emptyTaskList: string[] = []
+    
+    const taskNames: Array<{ key: keyof ModelTaskConfig; label: string }> = [
+      { key: 'utils', label: '工具模型' },
+      { key: 'utils_small', label: '轻量工具模型' },
+      { key: 'tool_use', label: '工具调用模型' },
+      { key: 'replyer', label: '回复模型' },
+      { key: 'planner', label: '规划器模型' },
+      { key: 'vlm', label: '视觉模型' },
+      { key: 'voice', label: '语音模型' },
+      { key: 'embedding', label: '嵌入模型' },
+      { key: 'lpmm_entity_extract', label: 'LPMM实体抽取' },
+      { key: 'lpmm_rdf_build', label: 'LPMM关系构建' },
+      { key: 'lpmm_qa', label: 'LPMM问答' },
+    ]
+    
+    for (const { key, label } of taskNames) {
+      const task = taskConf[key]
+      if (!task) continue
+      
+      // 检查是否有模型
+      if (!task.model_list || task.model_list.length === 0) {
+        emptyTaskList.push(label)
+        continue
+      }
+      
+      // 检查是否引用了不存在的模型
+      const invalid = task.model_list.filter(modelName => !modelNameSet.has(modelName))
+      if (invalid.length > 0) {
+        invalidRefs.push({ taskName: label, invalidModels: invalid })
+      }
+    }
+    
+    setInvalidModelRefs(invalidRefs)
+    setEmptyTasks(emptyTaskList)
+  }, [])
+  
   // 加载配置
   const loadConfig = useCallback(async () => {
     try {
@@ -136,9 +183,14 @@ function ModelConfigPageContent() {
       setProviders(providerList.map((p) => p.name))
       setProviderConfigs(providerList)
       
-      setTaskConfig((config.model_task_config as ModelTaskConfig) || null)
+      const taskConf = (config.model_task_config as ModelTaskConfig) || null
+      setTaskConfig(taskConf)
+      
+      // 检查任务配置问题
+      checkTaskConfigIssues(taskConf, modelList)
+      
       // 初始化上一次的 embedding 模型列表
-      const embeddingModels = (config.model_task_config as ModelTaskConfig)?.embedding?.model_list || []
+      const embeddingModels = taskConf?.embedding?.model_list || []
       previousEmbeddingModelsRef.current = [...embeddingModels]
       setHasUnsavedChanges(false)
       initialLoadRef.current = false
@@ -147,7 +199,7 @@ function ModelConfigPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [initialLoadRef])
+  }, [initialLoadRef, checkTaskConfigIssues])
 
   // 初始加载
   useEffect(() => {
@@ -180,6 +232,31 @@ function ModelConfigPageContent() {
   const handleRestart = async () => {
     await triggerRestart()
   }
+  
+  // 一键删除所有无效模型引用
+  const handleRemoveInvalidRefs = useCallback(() => {
+    if (!taskConfig) return
+    
+    const modelNameSet = new Set(models.map(m => m.name))
+    const newTaskConfig = { ...taskConfig }
+    
+    // 遍历所有任务，过滤掉无效的模型引用
+    const taskKeys = Object.keys(newTaskConfig) as Array<keyof ModelTaskConfig>
+    for (const key of taskKeys) {
+      const task = newTaskConfig[key]
+      if (task && task.model_list) {
+        task.model_list = task.model_list.filter(modelName => modelNameSet.has(modelName))
+      }
+    }
+    
+    setTaskConfig(newTaskConfig)
+    setInvalidModelRefs([])
+    
+    toast({
+      title: '清理完成',
+      description: '已删除所有无效的模型引用',
+    })
+  }, [taskConfig, models, toast])
 
   // 清理模型中的 null 值（TOML 不支持 null）
   const cleanModelForSave = (model: ModelInfo): ModelInfo => {
@@ -401,6 +478,8 @@ function ModelConfigPageContent() {
       setModels(newModels)
       // 立即更新模型名称列表
       setModelNames(newModels.map((m) => m.name))
+      // 重新检查任务配置问题
+      checkTaskConfigIssues(taskConfig, newModels)
       toast({
         title: '删除成功',
         description: '配置将在 2 秒后自动保存，或点击右上角"保存配置"按钮立即保存',
@@ -453,6 +532,8 @@ function ModelConfigPageContent() {
     setModels(newModels)
     // 立即更新模型名称列表
     setModelNames(newModels.map((m) => m.name))
+    // 重新检查任务配置问题
+    checkTaskConfigIssues(taskConfig, newModels)
     setSelectedModels(new Set())
     setBatchDeleteDialogOpen(false)
     toast({
@@ -490,13 +571,17 @@ function ModelConfigPageContent() {
     }
     
     // 正常更新配置
-    setTaskConfig({
+    const newTaskConfig = {
       ...taskConfig,
       [taskName]: {
         ...taskConfig[taskName],
         [field]: value,
       },
-    })
+    }
+    setTaskConfig(newTaskConfig)
+    
+    // 重新检查任务配置问题
+    checkTaskConfigIssues(newTaskConfig, models)
     
     // 如果是 embedding 模型列表，更新 ref
     if (taskName === 'embedding' && field === 'model_list' && Array.isArray(value)) {
@@ -510,13 +595,17 @@ function ModelConfigPageContent() {
     
     const { field, value } = pendingEmbeddingUpdateRef.current
     
-    setTaskConfig({
+    const newTaskConfig = {
       ...taskConfig,
       embedding: {
         ...taskConfig.embedding,
         [field]: value,
       },
-    })
+    }
+    setTaskConfig(newTaskConfig)
+    
+    // 重新检查任务配置问题
+    checkTaskConfigIssues(newTaskConfig, models)
     
     // 更新 ref
     if (field === 'model_list' && Array.isArray(value)) {
@@ -670,6 +759,47 @@ function ModelConfigPageContent() {
             配置更新后需要<strong>重启麦麦</strong>才能生效。你可以点击右上角的"保存并重启"按钮一键完成保存和重启。
           </AlertDescription>
         </Alert>
+        
+        {/* 无效模型引用警告 */}
+        {invalidModelRefs.length > 0 && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <strong>检测到无效的模型引用</strong>
+                <div className="mt-2 space-y-1">
+                  {invalidModelRefs.map(({ taskName, invalidModels }) => (
+                    <div key={taskName} className="text-sm">
+                      <strong>{taskName}</strong> 引用了不存在的模型: {invalidModels.join(', ')}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 bg-background hover:bg-accent"
+                onClick={handleRemoveInvalidRefs}
+              >
+                一键清理
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {/* 空任务警告 */}
+        {emptyTasks.length > 0 && (
+          <Alert variant="default" className="border-yellow-500/50 bg-yellow-500/10">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription>
+              <strong className="text-yellow-600">以下任务未配置模型</strong>
+              <div className="mt-2 text-sm">
+                {emptyTasks.join('、')} 还未分配模型，这些功能将无法正常工作。
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
 
         {/* 新手引导入口 - 仅在桌面端显示，移动端隐藏 */}
         <Alert className="hidden lg:flex border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors" onClick={handleStartTour}>
