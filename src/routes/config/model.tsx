@@ -46,13 +46,13 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Pencil, Trash2, Save, Search, Info, Power, Check, ChevronsUpDown, RefreshCw, Loader2, GraduationCap, Share2, AlertTriangle } from 'lucide-react'
+import { Plus, Pencil, Trash2, Save, Search, Info, Power, Check, ChevronsUpDown, RefreshCw, Loader2, GraduationCap, Share2, AlertTriangle, Settings } from 'lucide-react'
 import { getModelConfig, updateModelConfig } from '@/lib/config-api'
 import { useToast } from '@/hooks/use-toast'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { RestartOverlay } from '@/components/restart-overlay'
 import { RestartProvider, useRestart } from '@/lib/restart-context'
-import { KeyValueEditor } from '@/components/ui/key-value-editor'
+import { ExtraParamsDialog } from '@/components/ui/extra-params-dialog'
 import { SharePackDialog } from '@/components/share-pack-dialog'
 
 // 导入模块化的类型定义和组件
@@ -83,6 +83,7 @@ function ModelConfigPageContent() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editingModel, setEditingModel] = useState<ModelInfo | null>(null)
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [extraParamsDialogOpen, setExtraParamsDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deletingIndex, setDeletingIndex] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -1431,16 +1432,42 @@ function ModelConfigPageContent() {
               </Label>
             </div>
 
-            {/* 额外参数编辑器 */}
-            <KeyValueEditor
-              value={editingModel?.extra_params || {}}
-              onChange={(params) =>
-                setEditingModel((prev) =>
-                  prev ? { ...prev, extra_params: params } : null
-                )
-              }
-              placeholder="添加额外参数（如 enable_thinking、top_p 等）..."
-            />
+            {/* 额外参数 */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">额外参数</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 justify-start h-9"
+                  onClick={() => setExtraParamsDialogOpen(true)}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  {Object.keys(editingModel?.extra_params || {}).length > 0 ? (
+                    <span>
+                      已配置 {Object.keys(editingModel?.extra_params || {}).length} 个参数
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">未配置额外参数</span>
+                  )}
+                </Button>
+              </div>
+              {Object.keys(editingModel?.extra_params || {}).length > 0 && (
+                <div className="text-xs text-muted-foreground px-1">
+                  {Object.keys(editingModel?.extra_params || {})
+                    .slice(0, 3)
+                    .map((key) => (
+                      <span key={key} className="inline-block mr-2">
+                        <code className="px-1.5 py-0.5 bg-muted rounded">{key}</code>
+                      </span>
+                    ))}
+                  {Object.keys(editingModel?.extra_params || {}).length > 3 && (
+                    <span>...</span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <DialogFooter>
@@ -1523,6 +1550,18 @@ function ModelConfigPageContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 额外参数编辑弹窗 */}
+      <ExtraParamsDialog
+        open={extraParamsDialogOpen}
+        onOpenChange={setExtraParamsDialogOpen}
+        value={editingModel?.extra_params || {}}
+        onChange={(params) =>
+          setEditingModel((prev) =>
+            prev ? { ...prev, extra_params: params } : null
+          )
+        }
+      />
 
       {/* 重启遮罩层 */}
       <RestartOverlay />
