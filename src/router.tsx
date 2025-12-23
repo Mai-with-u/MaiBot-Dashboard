@@ -16,6 +16,7 @@ import { PersonManagementPage } from './routes/person'
 import { KnowledgeGraphPage } from './routes/resource/knowledge-graph'
 import { KnowledgeBasePage } from './routes/resource/knowledge-base'
 import { LogViewerPage } from './routes/logs'
+import { PlannerMonitorPage } from './routes/monitor'
 import { PluginsPage } from './routes/plugins'
 import { ModelPresetsPage } from './routes/model-presets'
 import { PluginConfigPage } from './routes/plugin-config'
@@ -155,6 +156,13 @@ const logsRoute = createRoute({
   component: LogViewerPage,
 })
 
+// 计划器&恢复器监控路由
+const plannerMonitorRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/planner-monitor',
+  component: PlannerMonitorPage,
+})
+
 // 本地聊天室路由
 const chatRoute = createRoute({
   getParentRoute: () => protectedRoute,
@@ -261,6 +269,7 @@ const routeTree = rootRoute.addChildren([
     pluginConfigRoute,
     pluginMirrorsRoute,
     logsRoute,
+    plannerMonitorRoute,
     chatRoute,
     settingsRoute,
     packMarketRoute,

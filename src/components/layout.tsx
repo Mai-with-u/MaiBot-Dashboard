@@ -1,4 +1,4 @@
-import { Menu, Moon, Sun, ChevronLeft, Home, Settings, LogOut, FileText, Server, Boxes, Smile, MessageSquare, UserCircle, FileSearch, Package, BookOpen, Search, Sliders, Network, Hash, LayoutGrid, Database } from 'lucide-react'
+import { Menu, Moon, Sun, ChevronLeft, Home, Settings, LogOut, FileText, Server, Boxes, Smile, MessageSquare, UserCircle, FileSearch, Package, BookOpen, Search, Sliders, Network, Hash, LayoutGrid, Database, Activity } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Link, useMatchRoute } from '@tanstack/react-router'
 import { useTheme, toggleThemeWithTransition } from './use-theme'
@@ -103,6 +103,7 @@ export function Layout({ children }: LayoutProps) {
         { icon: LayoutGrid, label: '配置模板市场', path: '/config/pack-market' },
         { icon: Sliders, label: '插件配置', path: '/plugin-config' },
         { icon: FileSearch, label: '日志查看器', path: '/logs' },
+        { icon: Activity, label: '计划器&回复器监控', path: '/planner-monitor' },
         { icon: MessageSquare, label: '本地聊天室', path: '/chat' },
       ],
     },
