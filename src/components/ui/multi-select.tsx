@@ -111,19 +111,26 @@ function SortableBadge({
           <GripVertical className="h-3 w-3 text-muted-foreground" />
         </div>
         <span>{label}</span>
-        <button
-          type="button"
-          className="ml-1 rounded-sm hover:bg-destructive/20 focus:outline-none focus:ring-1 focus:ring-destructive"
+        <span
+          role="button"
+          tabIndex={0}
+          className="ml-1 rounded-sm hover:bg-destructive/20 focus:outline-none focus:ring-1 focus:ring-destructive cursor-pointer"
           onClick={handleRemoveClick}
           onPointerDown={handleRemovePointerDown}
           onMouseDown={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              handleRemoveClick(e as any)
+            }
+          }}
         >
           <X
-            className="h-3 w-3 cursor-pointer hover:text-destructive"
+            className="h-3 w-3 hover:text-destructive"
             strokeWidth={2}
             fill="none"
           />
-        </button>
+        </span>
       </Badge>
     </div>
   )

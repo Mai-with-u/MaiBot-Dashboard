@@ -138,7 +138,6 @@ function ModelConfigPageContent() {
     
     const taskNames: Array<{ key: keyof ModelTaskConfig; label: string }> = [
       { key: 'utils', label: '工具模型' },
-      { key: 'utils_small', label: '轻量工具模型' },
       { key: 'tool_use', label: '工具调用模型' },
       { key: 'replyer', label: '回复模型' },
       { key: 'planner', label: '规划器模型' },
@@ -147,7 +146,6 @@ function ModelConfigPageContent() {
       { key: 'embedding', label: '嵌入模型' },
       { key: 'lpmm_entity_extract', label: 'LPMM实体抽取' },
       { key: 'lpmm_rdf_build', label: 'LPMM关系构建' },
-      { key: 'lpmm_qa', label: 'LPMM问答' },
     ]
     
     for (const { key, label } of taskNames) {
@@ -428,7 +426,6 @@ function ModelConfigPageContent() {
       setTaskConfig({
         ...taskConfig,
         utils: { ...taskConfig.utils, model_list: updateModelList(taskConfig.utils?.model_list || []) },
-        utils_small: { ...taskConfig.utils_small, model_list: updateModelList(taskConfig.utils_small?.model_list || []) },
         tool_use: { ...taskConfig.tool_use, model_list: updateModelList(taskConfig.tool_use?.model_list || []) },
         replyer: { ...taskConfig.replyer, model_list: updateModelList(taskConfig.replyer?.model_list || []) },
         planner: { ...taskConfig.planner, model_list: updateModelList(taskConfig.planner?.model_list || []) },
@@ -437,7 +434,6 @@ function ModelConfigPageContent() {
         embedding: { ...taskConfig.embedding, model_list: updateModelList(taskConfig.embedding?.model_list || []) },
         lpmm_entity_extract: { ...taskConfig.lpmm_entity_extract, model_list: updateModelList(taskConfig.lpmm_entity_extract?.model_list || []) },
         lpmm_rdf_build: { ...taskConfig.lpmm_rdf_build, model_list: updateModelList(taskConfig.lpmm_rdf_build?.model_list || []) },
-        lpmm_qa: { ...taskConfig.lpmm_qa, model_list: updateModelList(taskConfig.lpmm_qa?.model_list || []) },
       })
     }
 
@@ -662,7 +658,6 @@ function ModelConfigPageContent() {
     
     const allTaskLists = [
       taskConfig.utils?.model_list || [],
-      taskConfig.utils_small?.model_list || [],
       taskConfig.tool_use?.model_list || [],
       taskConfig.replyer?.model_list || [],
       taskConfig.planner?.model_list || [],
@@ -671,7 +666,6 @@ function ModelConfigPageContent() {
       taskConfig.embedding?.model_list || [],
       taskConfig.lpmm_entity_extract?.model_list || [],
       taskConfig.lpmm_rdf_build?.model_list || [],
-      taskConfig.lpmm_qa?.model_list || [],
     ]
     
     return allTaskLists.some(list => list.includes(modelName))
@@ -920,15 +914,6 @@ function ModelConfigPageContent() {
                 dataTour="task-model-select"
               />
 
-              {/* Utils Small 任务 */}
-              <TaskConfigCard
-                title="组件小模型 (utils_small)"
-                description="消耗量较大的组件，建议使用速度较快的小模型"
-                taskConfig={taskConfig.utils_small}
-                modelNames={modelNames}
-                onChange={(field, value) => updateTaskConfig('utils_small', field, value)}
-              />
-
               {/* Tool Use 任务 */}
               <TaskConfigCard
                 title="工具调用模型 (tool_use)"
@@ -1010,14 +995,6 @@ function ModelConfigPageContent() {
                   onChange={(field, value) =>
                     updateTaskConfig('lpmm_rdf_build', field, value)
                   }
-                />
-
-                <TaskConfigCard
-                  title="问答模型 (lpmm_qa)"
-                  description="知识库问答"
-                  taskConfig={taskConfig.lpmm_qa}
-                  modelNames={modelNames}
-                  onChange={(field, value) => updateTaskConfig('lpmm_qa', field, value)}
                 />
               </div>
             </div>

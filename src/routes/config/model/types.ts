@@ -45,7 +45,6 @@ export interface TaskConfig {
  */
 export interface ModelTaskConfig {
   utils: TaskConfig
-  utils_small: TaskConfig
   tool_use: TaskConfig
   replyer: TaskConfig
   planner: TaskConfig
@@ -54,7 +53,6 @@ export interface ModelTaskConfig {
   embedding: TaskConfig
   lpmm_entity_extract: TaskConfig
   lpmm_rdf_build: TaskConfig
-  lpmm_qa: TaskConfig
 }
 
 /**
