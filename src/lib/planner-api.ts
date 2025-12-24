@@ -20,6 +20,7 @@ export interface PlanLogSummary {
   timestamp: number
   filename: string
   action_count: number
+  action_types: string[]  // 动作类型列表
   total_plan_ms: number
   llm_duration_ms: number
   reasoning_preview: string
@@ -61,8 +62,15 @@ export async function getPlannerOverview(): Promise<PlannerOverview> {
 /**
  * 获取指定聊天的规划日志列表（分页）
  */
-export async function getChatLogs(chatId: string, page = 1, pageSize = 20): Promise<PaginatedChatLogs> {
-  const response = await fetchWithAuth(`/api/planner/chat/${chatId}/logs?page=${page}&page_size=${pageSize}`)
+export async function getChatLogs(chatId: string, page = 1, pageSize = 20, search?: string): Promise<PaginatedChatLogs> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString()
+  })
+  if (search) {
+    params.append('search', search)
+  }
+  const response = await fetchWithAuth(`/api/planner/chat/${chatId}/logs?${params}`)
   return response.json()
 }
 
@@ -172,8 +180,15 @@ export async function getReplierOverview(): Promise<ReplierOverview> {
 /**
  * 获取指定聊天的回复日志列表（分页）
  */
-export async function getReplyChatLogs(chatId: string, page = 1, pageSize = 20): Promise<PaginatedReplyLogs> {
-  const response = await fetchWithAuth(`/api/replier/chat/${chatId}/logs?page=${page}&page_size=${pageSize}`)
+export async function getReplyChatLogs(chatId: string, page = 1, pageSize = 20, search?: string): Promise<PaginatedReplyLogs> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    page_size: pageSize.toString()
+  })
+  if (search) {
+    params.append('search', search)
+  }
+  const response = await fetchWithAuth(`/api/replier/chat/${chatId}/logs?${params}`)
   return response.json()
 }
 

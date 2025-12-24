@@ -1,7 +1,7 @@
 /**
  * 回复器监控组件
  */
-import { Clock, TrendingUp, FileText, Zap, Brain, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowLeft, MessageSquare, CheckCircle, XCircle, Cpu } from 'lucide-react'
+import { Clock, TrendingUp, FileText, Zap, Brain, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowLeft, MessageSquare, CheckCircle, XCircle, Cpu, Search } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -46,6 +46,8 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [jumpToPage, setJumpToPage] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   
   // 详情弹窗
   const [selectedLog, setSelectedLog] = useState<ReplyLogDetail | null>(null)
@@ -70,14 +72,14 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
     if (!selectedChat) return
     try {
       setChatLogsLoading(true)
-      const data = await getReplyChatLogs(selectedChat.chat_id, page, pageSize)
+      const data = await getReplyChatLogs(selectedChat.chat_id, page, pageSize, searchQuery || undefined)
       setChatLogs(data)
     } catch (error) {
       console.error('加载聊天日志失败:', error)
     } finally {
       setChatLogsLoading(false)
     }
-  }, [selectedChat, page, pageSize])
+  }, [selectedChat, page, pageSize, searchQuery])
 
   // 初始加载
   useEffect(() => {
@@ -117,6 +119,8 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
   const handleChatClick = (chat: ReplierChatSummary) => {
     setSelectedChat(chat)
     setPage(1)
+    setSearchQuery('')
+    setSearchInput('')
     setView('chat-logs')
   }
 
@@ -124,6 +128,19 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
     setView('overview')
     setSelectedChat(null)
     setChatLogs(null)
+    setSearchQuery('')
+    setSearchInput('')
+  }
+
+  const handleSearch = () => {
+    setSearchQuery(searchInput)
+    setPage(1)
+  }
+
+  const handleClearSearch = () => {
+    setSearchInput('')
+    setSearchQuery('')
+    setPage(1)
   }
 
   const handleLogClick = async (chatId: string, filename: string) => {
@@ -259,18 +276,42 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
                       {selectedChat ? getChatName(selectedChat.chat_id) : ''}
                     </CardDescription>
                   </div>
-                  <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10条/页</SelectItem>
-                      <SelectItem value="20">20条/页</SelectItem>
-                      <SelectItem value="50">50条/页</SelectItem>
-                      <SelectItem value="100">100条/页</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Input
+                        placeholder="搜索提示词内容..."
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                        className="w-48"
+                      />
+                      <Button variant="outline" size="icon" onClick={handleSearch}>
+                        <Search className="h-4 w-4" />
+                      </Button>
+                      {searchQuery && (
+                        <Button variant="ghost" size="sm" onClick={handleClearSearch}>
+                          清除
+                        </Button>
+                      )}
+                    </div>
+                    <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10条/页</SelectItem>
+                        <SelectItem value="20">20条/页</SelectItem>
+                        <SelectItem value="50">50条/页</SelectItem>
+                        <SelectItem value="100">100条/页</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+                {searchQuery && (
+                  <div className="text-sm text-muted-foreground mt-2">
+                    搜索关键词: <span className="font-medium">"{searchQuery}"</span>
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 {chatLogsLoading ? (

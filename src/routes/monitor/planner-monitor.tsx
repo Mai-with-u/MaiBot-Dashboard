@@ -1,7 +1,7 @@
 /**
  * 规划器监控组件
  */
-import { Clock, TrendingUp, FileText, Zap, Brain, List, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowLeft, MessageSquare } from 'lucide-react'
+import { Clock, TrendingUp, FileText, Zap, Brain, List, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowLeft, MessageSquare, Search } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -46,6 +46,8 @@ export function PlannerMonitor({ autoRefresh, refreshKey }: PlannerMonitorProps)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [jumpToPage, setJumpToPage] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   
   // 详情弹窗
   const [selectedLog, setSelectedLog] = useState<PlanLogDetail | null>(null)
@@ -70,14 +72,14 @@ export function PlannerMonitor({ autoRefresh, refreshKey }: PlannerMonitorProps)
     if (!selectedChat) return
     try {
       setChatLogsLoading(true)
-      const data = await getChatLogs(selectedChat.chat_id, page, pageSize)
+      const data = await getChatLogs(selectedChat.chat_id, page, pageSize, searchQuery || undefined)
       setChatLogs(data)
     } catch (error) {
       console.error('加载聊天日志失败:', error)
     } finally {
       setChatLogsLoading(false)
     }
-  }, [selectedChat, page, pageSize])
+  }, [selectedChat, page, pageSize, searchQuery])
 
   // 初始加载
   useEffect(() => {
@@ -117,6 +119,8 @@ export function PlannerMonitor({ autoRefresh, refreshKey }: PlannerMonitorProps)
   const handleChatClick = (chat: ChatSummary) => {
     setSelectedChat(chat)
     setPage(1)
+    setSearchQuery('')
+    setSearchInput('')
     setView('chat-logs')
   }
 
@@ -124,6 +128,19 @@ export function PlannerMonitor({ autoRefresh, refreshKey }: PlannerMonitorProps)
     setView('overview')
     setSelectedChat(null)
     setChatLogs(null)
+    setSearchQuery('')
+    setSearchInput('')
+  }
+
+  const handleSearch = () => {
+    setSearchQuery(searchInput)
+    setPage(1)
+  }
+
+  const handleClearSearch = () => {
+    setSearchInput('')
+    setSearchQuery('')
+    setPage(1)
   }
 
   const handleLogClick = async (chatId: string, filename: string) => {
@@ -259,18 +276,42 @@ export function PlannerMonitor({ autoRefresh, refreshKey }: PlannerMonitorProps)
                       {selectedChat ? getChatName(selectedChat.chat_id) : ''}
                     </CardDescription>
                   </div>
-                  <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10条/页</SelectItem>
-                      <SelectItem value="20">20条/页</SelectItem>
-                      <SelectItem value="50">50条/页</SelectItem>
-                      <SelectItem value="100">100条/页</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Input
+                        placeholder="搜索提示词内容..."
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                        className="w-48"
+                      />
+                      <Button variant="outline" size="icon" onClick={handleSearch}>
+                        <Search className="h-4 w-4" />
+                      </Button>
+                      {searchQuery && (
+                        <Button variant="ghost" size="sm" onClick={handleClearSearch}>
+                          清除
+                        </Button>
+                      )}
+                    </div>
+                    <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10条/页</SelectItem>
+                        <SelectItem value="20">20条/页</SelectItem>
+                        <SelectItem value="50">50条/页</SelectItem>
+                        <SelectItem value="100">100条/页</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+                {searchQuery && (
+                  <div className="text-sm text-muted-foreground mt-2">
+                    搜索关键词: <span className="font-medium">"{searchQuery}"</span>
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 {chatLogsLoading ? (
@@ -301,6 +342,15 @@ export function PlannerMonitor({ autoRefresh, refreshKey }: PlannerMonitorProps)
                               </Badge>
                             </div>
                           </div>
+                          {plan.action_types && plan.action_types.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {plan.action_types.map((type, idx) => (
+                                <Badge key={idx} variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+                                  {type}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                           <p className="text-sm line-clamp-2">{plan.reasoning_preview || '无推理内容'}</p>
                         </div>
                       ))}
@@ -498,12 +548,12 @@ export function PlannerMonitor({ autoRefresh, refreshKey }: PlannerMonitorProps)
                               </div>
                             )}
                             {action.action_message && (
-                              <div>
+                              <div className="overflow-hidden">
                                 <div className="text-xs font-medium text-muted-foreground mb-1">动作消息</div>
                                 {typeof action.action_message === 'string' ? (
-                                  <p className="text-sm bg-muted/30 p-2 rounded">{action.action_message}</p>
+                                  <p className="text-sm bg-muted/30 p-2 rounded break-all whitespace-pre-wrap">{action.action_message}</p>
                                 ) : (
-                                  <pre className="text-xs bg-muted/30 p-2 rounded overflow-x-auto">
+                                  <pre className="text-xs bg-muted/30 p-2 rounded overflow-x-auto whitespace-pre-wrap break-all">
                                     {JSON.stringify(action.action_message, null, 2)}
                                   </pre>
                                 )}
