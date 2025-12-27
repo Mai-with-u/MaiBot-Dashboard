@@ -1,4 +1,4 @@
-import { MessageSquare, Search, Edit, Trash2, Eye, Plus, Clock, Hash, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { MessageSquare, Search, Edit, Trash2, Eye, Plus, Clock, Hash, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Info, CheckCircle2, XCircle, Circle } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -40,6 +40,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import type { Expression, ExpressionCreateRequest, ExpressionUpdateRequest, ChatInfo } from '@/types/expression'
 import { getExpressionList, getExpressionDetail, createExpression, updateExpression, deleteExpression, batchDeleteExpressions, getExpressionStats, getChatList } from '@/lib/expression-api'
 
@@ -701,6 +703,49 @@ function ExpressionDetailDialog({
           <div className="grid grid-cols-2 gap-4">
             <InfoItem icon={Clock} label="创建时间" value={formatTime(expression.create_date)} />
           </div>
+
+          {/* 状态标记 */}
+          <div className="rounded-lg border bg-muted/50 p-4">
+            <Label className="text-xs text-muted-foreground mb-3 block">状态标记</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-full",
+                  expression.checked ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600"
+                )}>
+                  {expression.checked ? (
+                    <CheckCircle2 className="h-5 w-5" />
+                  ) : (
+                    <Circle className="h-5 w-5" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">已检查</p>
+                  <p className="text-xs text-muted-foreground">
+                    {expression.checked ? "已通过AI检查" : "未检查"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-full",
+                  expression.rejected ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" : "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600"
+                )}>
+                  {expression.rejected ? (
+                    <XCircle className="h-5 w-5" />
+                  ) : (
+                    <Circle className="h-5 w-5" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">已拒绝</p>
+                  <p className="text-xs text-muted-foreground">
+                    {expression.rejected ? "已拒绝" : "正常"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <DialogFooter>
@@ -889,6 +934,8 @@ function ExpressionEditDialog({
         situation: expression.situation,
         style: expression.style,
         chat_id: expression.chat_id,
+        checked: expression.checked,
+        rejected: expression.rejected,
       })
     }
   }, [expression])
@@ -969,6 +1016,57 @@ function ExpressionEditDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* 状态标记 */}
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              <div className="space-y-1">
+                <p><strong>状态标记说明：</strong></p>
+                <p>• 已检查：表示该表达方式已通过AI自动检查</p>
+                <p>• 已拒绝：表示该表达方式被标记为不合适</p>
+                <p className="text-muted-foreground mt-2">
+                  根据配置中的"仅使用已检查的表达方式"设置：<br/>
+                  • 开启时：只使用"已检查=是"且"已拒绝=否"的表达方式<br/>
+                  • 关闭时：使用所有"已拒绝=否"的表达方式（不看已检查状态）
+                </p>
+              </div>
+            </AlertDescription>
+          </Alert>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="edit_checked" className="text-sm font-medium">
+                  已检查
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  通过AI自动检查
+                </p>
+              </div>
+              <Switch
+                id="edit_checked"
+                checked={formData.checked ?? false}
+                onCheckedChange={(checked) => setFormData({ ...formData, checked })}
+              />
+            </div>
+
+            <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="edit_rejected" className="text-sm font-medium">
+                  已拒绝
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  标记为已拒绝
+                </p>
+              </div>
+              <Switch
+                id="edit_rejected"
+                checked={formData.rejected ?? false}
+                onCheckedChange={(rejected) => setFormData({ ...formData, rejected })}
+              />
+            </div>
           </div>
         </div>
 

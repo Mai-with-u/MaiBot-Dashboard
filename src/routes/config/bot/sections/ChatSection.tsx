@@ -336,19 +336,6 @@ export const ChatSection = React.memo(function ChatSection({ config, onChange }:
               启用动态发言频率规则
             </Label>
           </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="include_planner_reasoning"
-              checked={config.include_planner_reasoning}
-              onCheckedChange={(checked) =>
-                onChange({ ...config, include_planner_reasoning: checked })
-              }
-            />
-            <Label htmlFor="include_planner_reasoning" className="cursor-pointer">
-              将 planner 推理加入 replyer
-            </Label>
-          </div>
         </div>
       </div>
 

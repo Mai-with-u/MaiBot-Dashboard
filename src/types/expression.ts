@@ -12,6 +12,8 @@ export interface Expression {
   last_active_time: number
   chat_id: string
   create_date: number | null
+  checked: boolean
+  rejected: boolean
 }
 
 /**
@@ -67,6 +69,8 @@ export interface ExpressionUpdateRequest {
   situation?: string
   style?: string
   chat_id?: string
+  checked?: boolean
+  rejected?: boolean
 }
 
 /**

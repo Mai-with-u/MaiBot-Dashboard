@@ -156,6 +156,26 @@ export function PluginDetailPage() {
       try {
         setReadmeLoading(true)
 
+        // 如果插件已安装，优先尝试从本地读取 README
+        if (isInstalled && search.pluginId) {
+          try {
+            const localResponse = await fetchWithAuth(`/api/webui/plugins/local-readme/${search.pluginId}`)
+            
+            if (localResponse.ok) {
+              const localResult = await localResponse.json()
+              
+              if (localResult.success && localResult.data) {
+                setReadme(localResult.data)
+                setReadmeLoading(false)
+                return // 成功获取本地 README，直接返回
+              }
+            }
+          } catch (err) {
+            console.log('本地 README 获取失败，尝试远程获取:', err)
+            // 继续执行远程获取逻辑
+          }
+        }
+
         // 从 repository_url 解析仓库信息
         // 格式: https://github.com/owner/repo
         const match = plugin.manifest.repository_url.match(/github\.com\/([^/]+)\/([^/\s]+)/)
@@ -198,7 +218,7 @@ export function PluginDetailPage() {
     }
 
     loadReadme()
-  }, [plugin])
+  }, [plugin, isInstalled, search.pluginId])
 
   // 检查是否需要更新
   const needsUpdate = () => {

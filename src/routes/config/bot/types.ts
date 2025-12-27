@@ -32,7 +32,6 @@ export interface ChatConfig {
     time: string
     value: number
   }>
-  include_planner_reasoning: boolean
 }
 
 export interface ExpressionConfig {
