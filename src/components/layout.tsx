@@ -1,4 +1,4 @@
-import { Menu, Moon, Sun, ChevronLeft, Home, Settings, LogOut, FileText, Server, Boxes, Smile, MessageSquare, UserCircle, FileSearch, Package, BookOpen, Search, Sliders, Network, Hash, LayoutGrid, Database, Activity } from 'lucide-react'
+import { Menu, Moon, Sun, ChevronLeft, Home, Settings, LogOut, FileText, Server, Boxes, Smile, MessageSquare, UserCircle, FileSearch, Package, BookOpen, Search, Sliders, Network, Hash, LayoutGrid, Database, Activity, PieChart } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Link, useMatchRoute } from '@tanstack/react-router'
 import { useTheme, toggleThemeWithTransition } from './use-theme'
@@ -313,6 +313,19 @@ export function Layout({ children }: LayoutProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* 年度总结入口 */}
+            <Link to="/annual-report">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2 bg-gradient-to-r from-pink-500/10 to-purple-500/10 hover:from-pink-500/20 hover:to-purple-500/20 border border-pink-500/20"
+                title="查看年度总结"
+              >
+                <PieChart className="h-4 w-4 text-pink-500" />
+                <span className="hidden sm:inline bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent font-medium">2025 年度总结</span>
+              </Button>
+            </Link>
+
             {/* 搜索框 */}
             <button
               onClick={() => setSearchOpen(true)}

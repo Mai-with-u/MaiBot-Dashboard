@@ -24,6 +24,7 @@ import { PluginMirrorsPage } from './routes/plugin-mirrors'
 import { PluginDetailPage } from './routes/plugin-detail'
 import { ChatPage } from './routes/chat'
 import { WebUIFeedbackSurveyPage, MaiBotFeedbackSurveyPage } from './routes/survey'
+import { AnnualReportPage } from './routes/annual-report'
 import PackMarketPage from './routes/config/pack-market'
 import PackDetailPage from './routes/config/pack-detail'
 import { Layout } from './components/layout'
@@ -240,6 +241,13 @@ const maibotFeedbackSurveyRoute = createRoute({
   component: MaiBotFeedbackSurveyPage,
 })
 
+// 年度报告路由
+const annualReportRoute = createRoute({
+  getParentRoute: () => protectedRoute,
+  path: '/annual-report',
+  component: AnnualReportPage,
+})
+
 // 404 路由
 const notFoundRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -276,6 +284,7 @@ const routeTree = rootRoute.addChildren([
     packDetailRoute,
     webuiFeedbackSurveyRoute,
     maibotFeedbackSurveyRoute,
+    annualReportRoute,
   ]),
   notFoundRoute,
 ])
