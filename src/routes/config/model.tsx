@@ -543,7 +543,7 @@ function ModelConfigPageContent() {
   const updateTaskConfig = (
     taskName: keyof ModelTaskConfig,
     field: keyof TaskConfig,
-    value: string[] | number
+    value: string[] | number | string
   ) => {
     if (!taskConfig) return
     
