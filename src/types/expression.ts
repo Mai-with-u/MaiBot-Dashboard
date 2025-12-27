@@ -9,8 +9,6 @@ export interface Expression {
   id: number
   situation: string
   style: string
-  context: string | null
-  up_content: string | null
   last_active_time: number
   chat_id: string
   create_date: number | null
@@ -59,8 +57,6 @@ export interface ExpressionDetailResponse {
 export interface ExpressionCreateRequest {
   situation: string
   style: string
-  context?: string
-  up_content?: string
   chat_id: string
 }
 
@@ -70,8 +66,6 @@ export interface ExpressionCreateRequest {
 export interface ExpressionUpdateRequest {
   situation?: string
   style?: string
-  context?: string
-  up_content?: string
   chat_id?: string
 }
 

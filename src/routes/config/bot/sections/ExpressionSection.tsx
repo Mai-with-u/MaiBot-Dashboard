@@ -490,24 +490,189 @@ export const ExpressionSection = React.memo(function ExpressionSection({
 
       {/* 表达反思配置 */}
       <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-6">
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold">表达反思配置</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                配置麦麦主动向管理员询问表达方式是否合适的功能
-              </p>
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold">表达优化配置</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              配置麦麦如何优化和改进表达方式
+            </p>
+          </div>
+          
+          {/* 自动表达优化 */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="expression_self_reflect" className="cursor-pointer font-medium">
+                  自动表达优化
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  麦麦会自动检查并优化表达方式，无需管理员手动干预
+                </p>
+              </div>
+              <Switch
+                id="expression_self_reflect"
+                checked={config.expression_self_reflect ?? false}
+                onCheckedChange={(checked) =>
+                  onChange({ ...config, expression_self_reflect: checked })
+                }
+              />
             </div>
-            <Switch
-              checked={config.reflect}
-              onCheckedChange={(checked) =>
-                onChange({ ...config, reflect: checked })
-              }
-            />
+
+            {config.expression_self_reflect && (
+              <div className="space-y-4 pl-4 border-l-2 border-primary/20">
+                {/* 自动检查间隔 */}
+                <div className="space-y-2">
+                  <Label htmlFor="expression_auto_check_interval">
+                    自动检查间隔（秒）
+                  </Label>
+                  <Input
+                    id="expression_auto_check_interval"
+                    type="number"
+                    min="60"
+                    value={config.expression_auto_check_interval ?? 3600}
+                    onChange={(e) =>
+                      onChange({
+                        ...config,
+                        expression_auto_check_interval: parseInt(e.target.value) || 3600,
+                      })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    默认 3600 秒（1小时）。设置麦麦多久执行一次自动表达检查
+                  </p>
+                </div>
+
+                {/* 每次检查数量 */}
+                <div className="space-y-2">
+                  <Label htmlFor="expression_auto_check_count">
+                    每次检查数量
+                  </Label>
+                  <Input
+                    id="expression_auto_check_count"
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={config.expression_auto_check_count ?? 10}
+                    onChange={(e) =>
+                      onChange({
+                        ...config,
+                        expression_auto_check_count: parseInt(e.target.value) || 10,
+                      })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    默认 10 条。每次自动检查时随机选取的表达方式数量
+                  </p>
+                </div>
+
+                {/* 自定义评估标准 */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>自定义评估标准</Label>
+                    <Button
+                      onClick={() => {
+                        onChange({
+                          ...config,
+                          expression_auto_check_custom_criteria: [
+                            ...(config.expression_auto_check_custom_criteria || []),
+                            '',
+                          ],
+                        })
+                      }}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      添加标准
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {(config.expression_auto_check_custom_criteria || []).map((criterion, index) => (
+                      <div key={index} className="flex gap-2">
+                        <Input
+                          value={criterion}
+                          onChange={(e) => {
+                            const newCriteria = [...(config.expression_auto_check_custom_criteria || [])]
+                            newCriteria[index] = e.target.value
+                            onChange({ ...config, expression_auto_check_custom_criteria: newCriteria })
+                          }}
+                          placeholder="输入评估标准，例如：是否符合角色人设"
+                          className="flex-1"
+                        />
+                        <Button
+                          onClick={() => {
+                            onChange({
+                              ...config,
+                              expression_auto_check_custom_criteria: (config.expression_auto_check_custom_criteria || []).filter((_, i) => i !== index),
+                            })
+                          }}
+                          size="icon"
+                          variant="ghost"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    
+                    {(!config.expression_auto_check_custom_criteria || config.expression_auto_check_custom_criteria.length === 0) && (
+                      <div className="text-center py-4 text-muted-foreground text-sm">
+                        暂无自定义标准，点击"添加标准"开始配置
+                      </div>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground">
+                    这些标准会被添加到评估提示词中，作为额外的评估要求
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
-          {config.reflect && (
-            <div className="space-y-4">
+          {/* 仅使用已检查的表达方式 */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="expression_checked_only" className="cursor-pointer font-medium">
+                  仅使用已检查的表达方式
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  开启后，只有 checked=True 且 rejected=False 的表达方式才会被选择使用。关闭后，只排除 rejected=True 的表达方式
+                </p>
+              </div>
+              <Switch
+                id="expression_checked_only"
+                checked={config.expression_checked_only ?? false}
+                onCheckedChange={(checked) =>
+                  onChange({ ...config, expression_checked_only: checked })
+                }
+              />
+            </div>
+          </div>
+
+          {/* 手动表达优化 */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="expression_manual_reflect" className="cursor-pointer font-medium">
+                  手动表达优化
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  麦麦会主动向管理员询问表达方式是否合适
+                </p>
+              </div>
+              <Switch
+                id="expression_manual_reflect"
+                checked={config.expression_manual_reflect ?? false}
+                onCheckedChange={(checked) =>
+                  onChange({ ...config, expression_manual_reflect: checked })
+                }
+              />
+            </div>
+
+            {config.expression_manual_reflect && (
+              <div className="space-y-4 pl-4 border-l-2 border-primary/20">
               {/* 表达反思操作员 ID */}
               <div className="rounded-lg border p-4 space-y-4">
                 <div className="flex items-center justify-between">
@@ -516,7 +681,7 @@ export const ExpressionSection = React.memo(function ExpressionSection({
                 
                 <div className="space-y-4">
                   {(() => {
-                    const operatorId = config.reflect_operator_id || ''
+                    const operatorId = config.manual_reflect_operator_id || ''
                     const parts = operatorId.split(':')
                     const platform = parts[0] || 'qq'
                     const chatId = parts[1] || ''
@@ -531,7 +696,7 @@ export const ExpressionSection = React.memo(function ExpressionSection({
                             <Select
                               value={platform}
                               onValueChange={(value) => {
-                                onChange({ ...config, reflect_operator_id: `${value}:${chatId}:${chatType}` })
+                                onChange({ ...config, manual_reflect_operator_id: `${value}:${chatId}:${chatType}` })
                               }}
                             >
                               <SelectTrigger>
@@ -550,7 +715,7 @@ export const ExpressionSection = React.memo(function ExpressionSection({
                             <Input
                               value={chatId}
                               onChange={(e) => {
-                                onChange({ ...config, reflect_operator_id: `${platform}:${e.target.value}:${chatType}` })
+                                onChange({ ...config, manual_reflect_operator_id: `${platform}:${e.target.value}:${chatType}` })
                               }}
                               placeholder="输入 ID"
                               className="font-mono text-sm"
@@ -563,7 +728,7 @@ export const ExpressionSection = React.memo(function ExpressionSection({
                             <Select
                               value={chatType}
                               onValueChange={(value) => {
-                                onChange({ ...config, reflect_operator_id: `${platform}:${chatId}:${value}` })
+                                onChange({ ...config, manual_reflect_operator_id: `${platform}:${chatId}:${value}` })
                               }}
                             >
                               <SelectTrigger>
@@ -577,7 +742,7 @@ export const ExpressionSection = React.memo(function ExpressionSection({
                           </div>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          当前操作员 ID：{config.reflect_operator_id || '（未设置）'}
+                          当前操作员 ID：{config.manual_reflect_operator_id || '（未设置）'}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           麦麦会向此操作员询问表达方式是否合适
@@ -690,7 +855,8 @@ export const ExpressionSection = React.memo(function ExpressionSection({
                 </div>
               </div>
             </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 

@@ -38,6 +38,7 @@ export interface TaskConfig {
   temperature?: number
   max_tokens?: number
   slow_threshold?: number
+  selection_strategy?: string
 }
 
 /**

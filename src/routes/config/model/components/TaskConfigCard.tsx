@@ -6,6 +6,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { MultiSelect } from '@/components/ui/multi-select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { TaskConfig } from '../types'
 
 interface TaskConfigCardProps {
@@ -13,7 +20,7 @@ interface TaskConfigCardProps {
   description: string
   taskConfig: TaskConfig
   modelNames: string[]
-  onChange: (field: keyof TaskConfig, value: string[] | number) => void
+  onChange: (field: keyof TaskConfig, value: string[] | number | string) => void
   hideTemperature?: boolean
   hideMaxTokens?: boolean
   dataTour?: string
@@ -120,6 +127,26 @@ export const TaskConfigCard = React.memo(function TaskConfigCard({
           />
           <p className="text-xs text-muted-foreground">
             模型响应时间超过此阈值将输出警告日志
+          </p>
+        </div>
+
+        {/* 模型选择策略 */}
+        <div className="grid gap-2">
+          <Label>模型选择策略</Label>
+          <Select
+            value={taskConfig.selection_strategy ?? 'balance'}
+            onValueChange={(value) => onChange('selection_strategy', value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="选择模型选择策略" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="balance">负载均衡（balance）</SelectItem>
+              <SelectItem value="random">随机选择（random）</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            负载均衡：优先选择使用次数少的模型。随机选择：完全随机从模型列表中选择
           </p>
         </div>
       </div>
