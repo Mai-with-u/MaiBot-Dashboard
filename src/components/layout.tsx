@@ -43,8 +43,23 @@ export function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [tooltipsEnabled, setTooltipsEnabled] = useState(false) // 控制 tooltip 启用状态
   const { theme, setTheme } = useTheme()
   const matchRoute = useMatchRoute()
+
+  // 侧边栏状态变化时，延迟启用/禁用 tooltip
+  useEffect(() => {
+    if (sidebarOpen) {
+      // 侧边栏展开时，立即禁用 tooltip
+      setTooltipsEnabled(false)
+    } else {
+      // 侧边栏收起时，等待动画完成后再启用 tooltip
+      const timer = setTimeout(() => {
+        setTooltipsEnabled(true)
+      }, 350) // 稍大于 CSS transition duration (300ms)
+      return () => clearTimeout(timer)
+    }
+  }, [sidebarOpen])
 
   // 搜索快捷键监听（Cmd/Ctrl + K）
   useEffect(() => {
@@ -259,7 +274,7 @@ export function Layout({ children }: LayoutProps) {
                               {menuItemContent}
                             </Link>
                           </TooltipTrigger>
-                          {!sidebarOpen && (
+                          {tooltipsEnabled && (
                             <TooltipContent side="right" className="hidden lg:block">
                               <p>{item.label}</p>
                             </TooltipContent>
