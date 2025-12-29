@@ -257,6 +257,7 @@ function BotConfigPageContent() {
   useConfigAutoSave(memoryConfig, 'memory', initialLoadRef.current, triggerAutoSave)
   useConfigAutoSave(toolConfig, 'tool', initialLoadRef.current, triggerAutoSave)
   useConfigAutoSave(voiceConfig, 'voice', initialLoadRef.current, triggerAutoSave)
+  useConfigAutoSave(dreamConfig, 'dream', initialLoadRef.current, triggerAutoSave)
   useConfigAutoSave(lpmmConfig, 'lpmm_knowledge', initialLoadRef.current, triggerAutoSave)
   useConfigAutoSave(keywordReactionConfig, 'keyword_reaction', initialLoadRef.current, triggerAutoSave)
   useConfigAutoSave(responsePostProcessConfig, 'response_post_process', initialLoadRef.current, triggerAutoSave)
