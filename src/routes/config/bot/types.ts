@@ -26,6 +26,7 @@ export interface ChatConfig {
   mentioned_bot_reply: boolean
   max_context_size: number
   planner_smooth: number
+  think_mode: 'classic' | 'deep' | 'dynamic'
   enable_talk_value_rules: boolean
   talk_value_rules: Array<{
     target: string

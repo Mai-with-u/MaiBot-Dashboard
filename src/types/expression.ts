@@ -14,6 +14,7 @@ export interface Expression {
   create_date: number | null
   checked: boolean
   rejected: boolean
+  modified_by: 'ai' | 'user' | null  // 最后修改来源
 }
 
 /**
@@ -71,6 +72,7 @@ export interface ExpressionUpdateRequest {
   chat_id?: string
   checked?: boolean
   rejected?: boolean
+  require_unchecked?: boolean  // 用于人工审核时的冲突检测
 }
 
 /**
@@ -115,4 +117,58 @@ export interface ExpressionStats {
 export interface ExpressionStatsResponse {
   success: boolean
   data: ExpressionStats
+}
+
+// ============ 审核相关类型 ============
+
+/**
+ * 审核统计数据
+ */
+export interface ReviewStats {
+  total: number
+  unchecked: number
+  passed: number
+  rejected: number
+  ai_checked: number
+  user_checked: number
+}
+
+/**
+ * 审核列表响应
+ */
+export interface ReviewListResponse {
+  success: boolean
+  total: number
+  page: number
+  page_size: number
+  data: Expression[]
+}
+
+/**
+ * 批量审核项
+ */
+export interface BatchReviewItem {
+  id: number
+  rejected: boolean
+  require_unchecked?: boolean
+}
+
+/**
+ * 批量审核结果项
+ */
+export interface BatchReviewResultItem {
+  id: number
+  success: boolean
+  message: string
+}
+
+/**
+ * 批量审核响应
+ */
+export interface BatchReviewResponse {
+  success: boolean
+  total: number
+  succeeded: number
+  failed: number
+  results: BatchReviewResultItem[]
 }

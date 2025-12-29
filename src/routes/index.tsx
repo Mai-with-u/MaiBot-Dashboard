@@ -43,12 +43,15 @@ import {
   CheckCircle2,
   AlertCircle,
   ClipboardList,
+  ClipboardCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Link } from '@tanstack/react-router'
 import { RestartProvider, useRestart } from '@/lib/restart-context'
 import { RestartOverlay } from '@/components/restart-overlay'
+import { ExpressionReviewer } from '@/components/expression-reviewer'
+import { getReviewStats } from '@/lib/expression-api'
 
 // 主导出组件：包装 RestartProvider
 export function IndexPage() {
@@ -133,7 +136,19 @@ function IndexPageContent() {
   const [hitokoto, setHitokoto] = useState<{ hitokoto: string; from: string } | null>(null)
   const [hitokotoLoading, setHitokotoLoading] = useState(true)
   const [botStatus, setBotStatus] = useState<BotStatus | null>(null)
+  const [isReviewerOpen, setIsReviewerOpen] = useState(false)
+  const [uncheckedCount, setUncheckedCount] = useState(0)
   const { triggerRestart, isRestarting } = useRestart()
+
+  // 获取审核统计
+  const fetchReviewStats = useCallback(async () => {
+    try {
+      const data = await getReviewStats()
+      setUncheckedCount(data.unchecked)
+    } catch (error) {
+      console.error('获取审核统计失败:', error)
+    }
+  }, [])
 
   // 获取一言
   const fetchHitokoto = useCallback(async () => {
@@ -228,7 +243,8 @@ function IndexPageContent() {
     fetchDashboardData()
     fetchHitokoto()
     fetchBotStatus()
-  }, [fetchDashboardData, fetchHitokoto, fetchBotStatus])
+    fetchReviewStats()
+  }, [fetchDashboardData, fetchHitokoto, fetchBotStatus, fetchReviewStats])
 
   // 自动刷新
   useEffect(() => {
@@ -469,6 +485,20 @@ function IndexPageContent() {
               >
                 <RotateCcw className={`h-4 w-4 ${isRestarting ? 'animate-spin' : ''}`} />
                 {isRestarting ? '重启中...' : '重启麦麦'}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsReviewerOpen(true)}
+                className="gap-2"
+              >
+                <ClipboardCheck className="h-4 w-4" />
+                表达审核
+                {uncheckedCount > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-orange-500 text-white">
+                    {uncheckedCount > 99 ? '99+' : uncheckedCount}
+                  </span>
+                )}
               </Button>
               <Button variant="outline" size="sm" asChild className="gap-2">
                 <Link to="/logs">
@@ -961,6 +991,18 @@ function IndexPageContent() {
 
       {/* 重启遮罩层 */}
       <RestartOverlay />
+
+      {/* 表达方式审核器 */}
+      <ExpressionReviewer
+        open={isReviewerOpen}
+        onOpenChange={(open) => {
+          setIsReviewerOpen(open)
+          if (!open) {
+            // 关闭审核器时刷新统计
+            fetchReviewStats()
+          }
+        }}
+      />
     </div>
     </ScrollArea>
   )

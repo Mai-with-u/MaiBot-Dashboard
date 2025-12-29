@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Slider } from '@/components/ui/slider'
 import {
   Select,
   SelectContent,
@@ -246,6 +245,67 @@ export const ExpressionSection = React.memo(function ExpressionSection({
 
   return (
     <div className="space-y-6">
+      {/* 黑话设置 - 移到顶部 */}
+      <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-4">
+        <h3 className="text-lg font-semibold mb-4">黑话设置</h3>
+        
+        <div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="all_global_jargon"
+              checked={config.all_global_jargon ?? false}
+              onCheckedChange={(checked) =>
+                onChange({ ...config, all_global_jargon: checked })
+              }
+            />
+            <Label htmlFor="all_global_jargon" className="cursor-pointer">
+              全局黑话模式
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            开启后，新增的黑话将默认设为全局（所有聊天流共享）。关闭后，已记录的全局黑话不会改变，需要手动删除。
+          </p>
+        </div>
+
+        <div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="enable_jargon_explanation"
+              checked={config.enable_jargon_explanation ?? true}
+              onCheckedChange={(checked) =>
+                onChange({ ...config, enable_jargon_explanation: checked })
+              }
+            />
+            <Label htmlFor="enable_jargon_explanation" className="cursor-pointer">
+              启用黑话解释
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            在回复前尝试对上下文中的黑话进行解释。关闭可减少一次LLM调用，仅影响回复前的黑话匹配与解释，不影响黑话学习。
+          </p>
+        </div>
+
+        <div>
+          <Label htmlFor="jargon_mode">黑话解释来源模式</Label>
+          <Select
+            value={config.jargon_mode ?? 'context'}
+            onValueChange={(value) => onChange({ ...config, jargon_mode: value })}
+          >
+            <SelectTrigger id="jargon_mode" className="mt-2">
+              <SelectValue placeholder="选择黑话解释来源" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="context">上下文模式（自动匹配黑话）</SelectItem>
+              <SelectItem value="planner">Planner模式（使用unknown_words列表）</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-2">
+            上下文模式：使用上下文自动匹配黑话并解释<br />
+            Planner模式：仅使用Planner在reply动作中给出的unknown_words列表进行黑话检索
+          </p>
+        </div>
+      </div>
+
       {/* 表达学习配置 */}
       <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-6">
         <div>
@@ -436,43 +496,22 @@ export const ExpressionSection = React.memo(function ExpressionSection({
                     </div>
                   </div>
 
-                  {/* 学习强度 - 改为滑块+输入框 */}
-                  <div className="grid gap-3">
+                  {/* 启用黑话学习 - 改为开关 */}
+                  <div className="grid gap-2">
                     <div className="flex items-center justify-between">
-                      <Label className="text-xs font-medium">学习强度</Label>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="5"
-                        value={rule[3]}
-                        onChange={(e) => {
-                          const val = parseFloat(e.target.value)
-                          if (!isNaN(val)) {
-                            updateLearningRule(index, 3, Math.max(0, Math.min(5, val)).toFixed(1))
-                          }
-                        }}
-                        className="w-20 h-8 text-xs"
+                      <div>
+                        <Label className="text-xs font-medium">启用黑话学习</Label>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          允许麦麦在此聊天流中学习和记录黑话
+                        </p>
+                      </div>
+                      <Switch
+                        checked={rule[3] === 'true' || rule[3] === 'enable'}
+                        onCheckedChange={(checked) =>
+                          updateLearningRule(index, 3, checked ? 'true' : 'false')
+                        }
                       />
                     </div>
-                    <Slider
-                      value={[parseFloat(rule[3]) || 1.0]}
-                      onValueChange={(values) =>
-                        updateLearningRule(index, 3, values[0].toFixed(1))
-                      }
-                      min={0}
-                      max={5}
-                      step={0.1}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>0 (不学习)</span>
-                      <span>2.5</span>
-                      <span>5.0 (快速学习)</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      影响学习频率，最短学习间隔 = 300/学习强度（秒）
-                    </p>
                   </div>
                 </div>
               </div>
@@ -506,7 +545,7 @@ export const ExpressionSection = React.memo(function ExpressionSection({
                   自动表达优化
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  麦麦会自动检查并优化表达方式，无需管理员手动干预
+                  启用后，麦麦会自动检查并优化表达方式，无需管理员手动干预
                 </p>
               </div>
               <Switch
@@ -538,7 +577,7 @@ export const ExpressionSection = React.memo(function ExpressionSection({
                     }
                   />
                   <p className="text-xs text-muted-foreground">
-                    默认 3600 秒（1小时）。设置麦麦多久执行一次自动表达检查
+                    表达方式自动检查的间隔时间（单位：秒），默认值：3600秒（1小时）
                   </p>
                 </div>
 
@@ -561,7 +600,7 @@ export const ExpressionSection = React.memo(function ExpressionSection({
                     }
                   />
                   <p className="text-xs text-muted-foreground">
-                    默认 10 条。每次自动检查时随机选取的表达方式数量
+                    每次自动检查时随机选取的表达方式数量，默认值：10条
                   </p>
                 </div>
 
@@ -635,10 +674,10 @@ export const ExpressionSection = React.memo(function ExpressionSection({
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <Label htmlFor="expression_checked_only" className="cursor-pointer font-medium">
-                  仅使用已检查的表达方式
+                  仅选择已检查且未拒绝的表达方式
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  开启后，只有 checked=True 且 rejected=False 的表达方式才会被选择使用。关闭后，只排除 rejected=True 的表达方式
+                  当设置为 true 时，只有 checked=True 且 rejected=False 的表达方式才会被选择；当设置为 false 时，保留旧的筛选原则（仅排除 rejected=True 的表达方式）
                 </p>
               </div>
               <Switch
@@ -659,7 +698,7 @@ export const ExpressionSection = React.memo(function ExpressionSection({
                   手动表达优化
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  麦麦会主动向管理员询问表达方式是否合适
+                  启用后，麦麦会主动向管理员询问表达方式是否合适
                 </p>
               </div>
               <Switch
@@ -745,7 +784,7 @@ export const ExpressionSection = React.memo(function ExpressionSection({
                           当前操作员 ID：{config.manual_reflect_operator_id || '（未设置）'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          麦麦会向此操作员询问表达方式是否合适
+                          手动表达优化操作员ID，格式：platform:id:type (例如 "qq:123456:private" 或 "qq:654321:group")
                         </p>
                       </div>
                     )
@@ -757,9 +796,9 @@ export const ExpressionSection = React.memo(function ExpressionSection({
               <div className="rounded-lg border p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-sm font-medium">允许反思的聊天流</span>
+                    <span className="text-sm font-medium">允许进行表达反思的聊天流</span>
                     <p className="text-xs text-muted-foreground mt-1">
-                      只有在此列表中的聊天流才会提出问题并跟踪。如果列表为空，则所有聊天流都可以进行表达反思
+                      只有在此列表中的聊天流才会提出问题并跟踪。如果列表为空，则所有聊天流都可以进行表达反思（前提是启用了手动表达优化）
                     </p>
                   </div>
                   <Button
@@ -952,66 +991,6 @@ export const ExpressionSection = React.memo(function ExpressionSection({
         </div>
       </div>
 
-      {/* 黑话设置 */}
-      <div className="rounded-lg border bg-card p-4 sm:p-6 space-y-4">
-        <h3 className="text-lg font-semibold mb-4">黑话设置</h3>
-        
-        <div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="all_global_jargon"
-              checked={config.all_global_jargon ?? false}
-              onCheckedChange={(checked) =>
-                onChange({ ...config, all_global_jargon: checked })
-              }
-            />
-            <Label htmlFor="all_global_jargon" className="cursor-pointer">
-              全局黑话模式
-            </Label>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            开启后，新增的黑话将默认设为全局（所有聊天流共享）。关闭后，已记录的全局黑话不会改变，需要手动删除。
-          </p>
-        </div>
-
-        <div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="enable_jargon_explanation"
-              checked={config.enable_jargon_explanation ?? true}
-              onCheckedChange={(checked) =>
-                onChange({ ...config, enable_jargon_explanation: checked })
-              }
-            />
-            <Label htmlFor="enable_jargon_explanation" className="cursor-pointer">
-              启用黑话解释
-            </Label>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            在回复前尝试对上下文中的黑话进行解释。关闭可减少一次LLM调用，仅影响回复前的黑话匹配与解释，不影响黑话学习。
-          </p>
-        </div>
-
-        <div>
-          <Label htmlFor="jargon_mode">黑话解释来源模式</Label>
-          <Select
-            value={config.jargon_mode ?? 'context'}
-            onValueChange={(value) => onChange({ ...config, jargon_mode: value })}
-          >
-            <SelectTrigger id="jargon_mode" className="mt-2">
-              <SelectValue placeholder="选择黑话解释来源" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="context">上下文模式（自动匹配黑话）</SelectItem>
-              <SelectItem value="planner">Planner模式（使用unknown_words列表）</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground mt-2">
-            上下文模式：使用上下文自动匹配黑话并解释<br />
-            Planner模式：仅使用Planner在reply动作中给出的unknown_words列表进行黑话检索
-          </p>
-        </div>
-      </div>
     </div>
   )
 })

@@ -98,51 +98,6 @@ export const BotInfoSection = React.memo(function BotInfoSection({ config, onCha
 
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
-              <Label>其他平台账号</Label>
-              <Button onClick={addPlatform} size="sm" variant="outline">
-                <Plus className="h-4 w-4 mr-1" />
-                添加
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {platforms.map((platform, index) => (
-                <div key={index} className="flex gap-2">
-                  <Input
-                    value={platform}
-                    onChange={(e) => updatePlatform(index, e.target.value)}
-                    placeholder="wx:114514"
-                  />
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button size="icon" variant="outline">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>确认删除</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          确定要删除平台账号 "{platform || '(空)'}" 吗？此操作无法撤销。
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>取消</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => removePlatform(index)}>
-                          删除
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              ))}
-              {platforms.length === 0 && (
-                <p className="text-sm text-muted-foreground">暂无其他平台账号</p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <div className="flex items-center justify-between">
               <Label>别名</Label>
               <Button onClick={addAlias} size="sm" variant="outline">
                 <Plus className="h-4 w-4 mr-1" />
@@ -182,6 +137,51 @@ export const BotInfoSection = React.memo(function BotInfoSection({ config, onCha
               ))}
               {aliasNames.length === 0 && (
                 <p className="text-sm text-muted-foreground">暂无别名</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between">
+              <Label>其他平台账号</Label>
+              <Button onClick={addPlatform} size="sm" variant="outline">
+                <Plus className="h-4 w-4 mr-1" />
+                添加
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {platforms.map((platform, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    value={platform}
+                    onChange={(e) => updatePlatform(index, e.target.value)}
+                    placeholder="wx:114514"
+                  />
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="icon" variant="outline">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>确认删除</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          确定要删除平台账号 "{platform || '(空)'}" 吗？此操作无法撤销。
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => removePlatform(index)}>
+                          删除
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              ))}
+              {platforms.length === 0 && (
+                <p className="text-sm text-muted-foreground">暂无其他平台账号</p>
               )}
             </div>
           </div>

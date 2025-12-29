@@ -281,6 +281,26 @@ export const ChatSection = React.memo(function ChatSection({ config, onChange }:
             <p className="text-xs text-muted-foreground">越小越沉默，范围 0-1</p>
           </div>
 
+          <div className="grid gap-2">
+            <Label htmlFor="think_mode">思考模式</Label>
+            <Select
+              value={config.think_mode || 'classic'}
+              onValueChange={(value) => onChange({ ...config, think_mode: value as 'classic' | 'deep' | 'dynamic' })}
+            >
+              <SelectTrigger id="think_mode">
+                <SelectValue placeholder="选择思考模式" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="classic">经典模式 - 浅度思考和回复</SelectItem>
+                <SelectItem value="deep">深度模式 - 进行深度思考和回复</SelectItem>
+                <SelectItem value="dynamic">动态模式 - 自动选择思考深度</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              控制麦麦的思考深度。经典模式回复快但简单；深度模式更深入但较慢；动态模式根据情况自动选择
+            </p>
+          </div>
+
           <div className="flex items-center space-x-2">
             <Switch
               id="mentioned_bot_reply"

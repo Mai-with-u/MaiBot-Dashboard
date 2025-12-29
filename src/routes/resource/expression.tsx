@@ -1,4 +1,4 @@
-import { MessageSquare, Search, Edit, Trash2, Eye, Plus, Clock, Hash, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Info, CheckCircle2, XCircle, Circle } from 'lucide-react'
+import { MessageSquare, Search, Edit, Trash2, Eye, Plus, Clock, Hash, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Info, CheckCircle2, XCircle, Circle, ClipboardCheck } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -43,7 +43,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import type { Expression, ExpressionCreateRequest, ExpressionUpdateRequest, ChatInfo } from '@/types/expression'
-import { getExpressionList, getExpressionDetail, createExpression, updateExpression, deleteExpression, batchDeleteExpressions, getExpressionStats, getChatList } from '@/lib/expression-api'
+import { getExpressionList, getExpressionDetail, createExpression, updateExpression, deleteExpression, batchDeleteExpressions, getExpressionStats, getChatList, getReviewStats } from '@/lib/expression-api'
+import { ExpressionReviewer } from '@/components/expression-reviewer'
 
 export function ExpressionManagementPage() {
   const [expressions, setExpressions] = useState<Expression[]>([])
@@ -63,6 +64,8 @@ export function ExpressionManagementPage() {
   const [stats, setStats] = useState({ total: 0, recent_7days: 0, chat_count: 0, top_chats: {} as Record<string, number> })
   const [chatList, setChatList] = useState<ChatInfo[]>([])
   const [chatNameMap, setChatNameMap] = useState<Map<string, string>>(new Map())
+  const [isReviewerOpen, setIsReviewerOpen] = useState(false)
+  const [uncheckedCount, setUncheckedCount] = useState(0)
   const { toast } = useToast()
 
   // 加载表达方式列表
@@ -99,6 +102,16 @@ export function ExpressionManagementPage() {
     }
   }
 
+  // 加载审核统计
+  const loadReviewStats = async () => {
+    try {
+      const data = await getReviewStats()
+      setUncheckedCount(data.unchecked)
+    } catch (error) {
+      console.error('加载审核统计失败:', error)
+    }
+  }
+
   // 加载聊天列表
   const loadChatList = async () => {
     try {
@@ -125,6 +138,7 @@ export function ExpressionManagementPage() {
   // 初始加载
   useEffect(() => {
     loadExpressions()
+    loadReviewStats()
     loadStats()
     loadChatList()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -242,10 +256,25 @@ export function ExpressionManagementPage() {
               管理麦麦的表达方式和话术模板
             </p>
           </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            新增表达方式
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsReviewerOpen(true)} 
+              className="gap-2"
+            >
+              <ClipboardCheck className="h-4 w-4" />
+              人工审核
+              {uncheckedCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-orange-500 text-white">
+                  {uncheckedCount > 99 ? '99+' : uncheckedCount}
+                </span>
+              )}
+            </Button>
+            <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              新增表达方式
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -651,6 +680,20 @@ export function ExpressionManagementPage() {
         onOpenChange={setIsBatchDeleteDialogOpen}
         onConfirm={handleBatchDelete}
         count={selectedIds.size}
+      />
+
+      {/* 表达方式审核器 */}
+      <ExpressionReviewer
+        open={isReviewerOpen}
+        onOpenChange={(open) => {
+          setIsReviewerOpen(open)
+          if (!open) {
+            // 关闭审核器时刷新列表和统计
+            loadExpressions()
+            loadStats()
+            loadReviewStats()
+          }
+        }}
       />
     </div>
   )

@@ -12,6 +12,10 @@ import type {
   ExpressionDeleteResponse,
   ExpressionStatsResponse,
   ChatListResponse,
+  ReviewStats,
+  ReviewListResponse,
+  BatchReviewItem,
+  BatchReviewResponse,
 } from '@/types/expression'
 
 const API_BASE = '/api/webui/expression'
@@ -163,6 +167,69 @@ export async function getExpressionStats(): Promise<ExpressionStatsResponse> {
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.detail || '获取统计数据失败')
+  }
+  
+  return response.json()
+}
+
+// ============ 审核相关 API ============
+
+/**
+ * 获取审核统计数据
+ */
+export async function getReviewStats(): Promise<ReviewStats> {
+  const response = await fetchWithAuth(`${API_BASE}/review/stats`)
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || '获取审核统计失败')
+  }
+  
+  return response.json()
+}
+
+/**
+ * 获取审核列表
+ */
+export async function getReviewList(params: {
+  page?: number
+  page_size?: number
+  filter_type?: 'unchecked' | 'passed' | 'rejected' | 'all'
+  search?: string
+  chat_id?: string
+}): Promise<ReviewListResponse> {
+  const queryParams = new URLSearchParams()
+  
+  if (params.page) queryParams.append('page', params.page.toString())
+  if (params.page_size) queryParams.append('page_size', params.page_size.toString())
+  if (params.filter_type) queryParams.append('filter_type', params.filter_type)
+  if (params.search) queryParams.append('search', params.search)
+  if (params.chat_id) queryParams.append('chat_id', params.chat_id)
+  
+  const response = await fetchWithAuth(`${API_BASE}/review/list?${queryParams}`)
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || '获取审核列表失败')
+  }
+  
+  return response.json()
+}
+
+/**
+ * 批量审核表达方式
+ */
+export async function batchReviewExpressions(
+  items: BatchReviewItem[]
+): Promise<BatchReviewResponse> {
+  const response = await fetchWithAuth(`${API_BASE}/review/batch`, {
+    method: 'POST',
+    body: JSON.stringify({ items }),
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || '批量审核失败')
   }
   
   return response.json()

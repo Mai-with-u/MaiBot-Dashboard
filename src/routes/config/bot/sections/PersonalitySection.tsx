@@ -60,69 +60,18 @@ export const PersonalitySection = React.memo(function PersonalitySection({ confi
             </p>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="reply_style">表达风格</Label>
-            <Textarea
-              id="reply_style"
-              value={config.reply_style}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...config, reply_style: e.target.value })}
-              placeholder="描述说话的表达风格和习惯"
-              rows={3}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="interest">兴趣</Label>
-            <Textarea
-              id="interest"
-              value={config.interest}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...config, interest: e.target.value })}
-              placeholder="会影响麦麦对什么话题进行回复"
-              rows={2}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="plan_style">说话规则与行为风格</Label>
-            <Textarea
-              id="plan_style"
-              value={config.plan_style}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...config, plan_style: e.target.value })}
-              placeholder="麦麦的说话规则和行为风格"
-              rows={5}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="visual_style">识图规则</Label>
-            <Textarea
-              id="visual_style"
-              value={config.visual_style}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...config, visual_style: e.target.value })}
-              placeholder="识图时的处理规则"
-              rows={3}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="private_plan_style">私聊规则</Label>
-            <Textarea
-              id="private_plan_style"
-              value={config.private_plan_style}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...config, private_plan_style: e.target.value })}
-              placeholder="私聊的说话规则和行为风格"
-              rows={4}
-            />
-          </div>
-
+          {/* 多重人格配置 - 移到人格特质下方 */}
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
-              <Label>状态列表（人格多样性）</Label>
+              <Label>多重人格</Label>
               <Button onClick={addState} size="sm" variant="outline">
                 <Plus className="h-4 w-4 mr-1" />
-                添加状态
+                添加人格
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              可以定义多个不同的人格状态，麦麦会随机切换
+            </p>
             <div className="space-y-2">
               {config.states.map((state, index) => (
                 <div key={index} className="flex gap-2">
@@ -159,7 +108,7 @@ export const PersonalitySection = React.memo(function PersonalitySection({ confi
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="state_probability">状态替换概率</Label>
+            <Label htmlFor="state_probability">替换为多重人格概率</Label>
             <Input
               id="state_probability"
               type="number"
@@ -172,8 +121,52 @@ export const PersonalitySection = React.memo(function PersonalitySection({ confi
               }
             />
             <p className="text-xs text-muted-foreground">
-              每次构建人格时替换 personality 的概率（0.0-1.0）
+              每次构建人格时，用多重人格替换主人格的概率（0.0-1.0）
             </p>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="reply_style">表达风格</Label>
+            <Textarea
+              id="reply_style"
+              value={config.reply_style}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...config, reply_style: e.target.value })}
+              placeholder="描述说话的表达风格和习惯"
+              rows={3}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="plan_style">说话规则与行为风格</Label>
+            <Textarea
+              id="plan_style"
+              value={config.plan_style}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...config, plan_style: e.target.value })}
+              placeholder="麦麦的说话规则和行为风格"
+              rows={5}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="visual_style">识图规则</Label>
+            <Textarea
+              id="visual_style"
+              value={config.visual_style}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...config, visual_style: e.target.value })}
+              placeholder="识图时的处理规则"
+              rows={3}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="private_plan_style">私聊规则</Label>
+            <Textarea
+              id="private_plan_style"
+              value={config.private_plan_style}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...config, private_plan_style: e.target.value })}
+              placeholder="私聊的说话规则和行为风格"
+              rows={4}
+            />
           </div>
         </div>
       </div>
