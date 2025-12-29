@@ -13,8 +13,15 @@ export const cleanProviderData = (provider: APIProvider): APIProvider => ({
 
 /**
  * 验证提供商表单数据
+ * @param provider 当前编辑的提供商
+ * @param existingProviders 现有提供商列表
+ * @param editingIndex 当前编辑的索引（新增时为 null）
  */
-export const validateProvider = (provider: APIProvider | null): {
+export const validateProvider = (
+  provider: APIProvider | null,
+  existingProviders: APIProvider[] = [],
+  editingIndex: number | null = null
+): {
   isValid: boolean
   errors: { name?: string; base_url?: string; api_key?: string }
 } => {
@@ -26,7 +33,20 @@ export const validateProvider = (provider: APIProvider | null): {
 
   if (!provider.name?.trim()) {
     errors.name = '请输入提供商名称'
+  } else {
+    // 检查名称是否与现有提供商重复
+    const isDuplicate = existingProviders.some((p, index) => {
+      // 编辑时排除自身
+      if (editingIndex !== null && index === editingIndex) {
+        return false
+      }
+      return p.name.trim().toLowerCase() === provider.name.trim().toLowerCase()
+    })
+    if (isDuplicate) {
+      errors.name = '提供商名称已存在，请使用其他名称'
+    }
   }
+  
   if (!provider.base_url?.trim()) {
     errors.base_url = '请输入基础 URL'
   }

@@ -366,6 +366,18 @@ function ModelConfigPageContent() {
     const errors: { name?: string; api_provider?: string; model_identifier?: string } = {}
     if (!editingModel.name?.trim()) {
       errors.name = '请输入模型名称'
+    } else {
+      // 检查名称是否与现有模型重复
+      const isDuplicate = models.some((m, index) => {
+        // 编辑时排除自身
+        if (editingIndex !== null && index === editingIndex) {
+          return false
+        }
+        return m.name.trim().toLowerCase() === editingModel.name.trim().toLowerCase()
+      })
+      if (isDuplicate) {
+        errors.name = '模型名称已存在，请使用其他名称'
+      }
     }
     if (!editingModel.api_provider?.trim()) {
       errors.api_provider = '请选择 API 提供商'

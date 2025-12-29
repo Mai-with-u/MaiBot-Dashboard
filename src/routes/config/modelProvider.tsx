@@ -637,8 +637,8 @@ function ModelProviderConfigPageContent() {
   const handleSaveEdit = () => {
     if (!editingProvider) return
 
-    // 验证必填项
-    const { isValid, errors } = validateProvider(editingProvider)
+    // 验证必填项（传入现有提供商列表和当前编辑索引用于重复检查）
+    const { isValid, errors } = validateProvider(editingProvider, providers, editingIndex)
 
     if (!isValid) {
       setFormErrors(errors)
