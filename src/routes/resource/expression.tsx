@@ -765,7 +765,7 @@ function ExpressionDetailDialog({
                 <div>
                   <p className="text-sm font-medium">已检查</p>
                   <p className="text-xs text-muted-foreground">
-                    {expression.checked ? "已通过AI检查" : "未检查"}
+                    {expression.checked ? "已通过审核" : "未审核"}
                   </p>
                 </div>
               </div>
@@ -783,7 +783,7 @@ function ExpressionDetailDialog({
                 <div>
                   <p className="text-sm font-medium">已拒绝</p>
                   <p className="text-xs text-muted-foreground">
-                    {expression.rejected ? "已拒绝" : "正常"}
+                    {expression.rejected ? "不会被使用" : "正常"}
                   </p>
                 </div>
               </div>
@@ -1067,12 +1067,12 @@ function ExpressionEditDialog({
             <AlertDescription className="text-xs">
               <div className="space-y-1">
                 <p><strong>状态标记说明：</strong></p>
-                <p>• 已检查：表示该表达方式已通过AI自动检查</p>
-                <p>• 已拒绝：表示该表达方式被标记为不合适</p>
+                <p>• 已检查：表示该表达方式已通过审核（可由AI自动检查或人工审核）</p>
+                <p>• 已拒绝：表示该表达方式被标记为不合适，将永远不会被使用</p>
                 <p className="text-muted-foreground mt-2">
-                  根据配置中的"仅使用已检查的表达方式"设置：<br/>
-                  • 开启时：只使用"已检查=是"且"已拒绝=否"的表达方式<br/>
-                  • 关闭时：使用所有"已拒绝=否"的表达方式（不看已检查状态）
+                  根据配置中"仅使用已审核通过的表达方式"设置：<br/>
+                  • 开启时：只有通过审核（已检查）的项目会被使用<br/>
+                  • 关闭时：未审核的项目也会被使用
                 </p>
               </div>
             </AlertDescription>
@@ -1085,7 +1085,7 @@ function ExpressionEditDialog({
                   已检查
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  通过AI自动检查
+                  已通过审核
                 </p>
               </div>
               <Switch
@@ -1101,7 +1101,7 @@ function ExpressionEditDialog({
                   已拒绝
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  标记为已拒绝
+                  不会被使用
                 </p>
               </div>
               <Switch

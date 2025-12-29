@@ -311,7 +311,7 @@ export function ExpressionReviewer({ open, onOpenChange }: ExpressionReviewerPro
         <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle className="text-xl">表达方式审核</DialogTitle>
           <DialogDescription>
-            审核麦麦学习到的表达方式，通过或拒绝不合适的内容
+            审核麦麦学习到的表达方式。通过审核的项目才会被使用（可在配置中调整），被拒绝的项目永远不会被使用。
           </DialogDescription>
           
           {/* 统计卡片 */}

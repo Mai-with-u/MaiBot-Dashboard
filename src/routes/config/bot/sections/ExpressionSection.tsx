@@ -674,10 +674,10 @@ export const ExpressionSection = React.memo(function ExpressionSection({
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <Label htmlFor="expression_checked_only" className="cursor-pointer font-medium">
-                  仅选择已检查且未拒绝的表达方式
+                  仅使用已审核通过的表达方式
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  当设置为 true 时，只有 checked=True 且 rejected=False 的表达方式才会被选择；当设置为 false 时，保留旧的筛选原则（仅排除 rejected=True 的表达方式）
+                  开启后，只有通过审核（已检查）的项目会被使用；关闭时，未审核的项目也会被使用。无论开关状态，被拒绝的项目永远不会被使用。
                 </p>
               </div>
               <Switch
