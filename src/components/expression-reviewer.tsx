@@ -22,6 +22,20 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+} from '@/components/ui/pagination'
 import { useToast } from '@/hooks/use-toast'
 import {
   CheckCircle2,
@@ -56,7 +70,8 @@ export function ExpressionReviewer({ open, onOpenChange }: ExpressionReviewerPro
   const [statsLoading, setStatsLoading] = useState(false)
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const [pageSize] = useState(20)
+  const [pageSize, setPageSize] = useState(20)
+  const [jumpPage, setJumpPage] = useState('')
   const [filterType, setFilterType] = useState<'unchecked' | 'passed' | 'rejected' | 'all'>('unchecked')
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
@@ -305,37 +320,82 @@ export function ExpressionReviewer({ open, onOpenChange }: ExpressionReviewerPro
 
   const totalPages = Math.ceil(total / pageSize)
 
+  // 生成页码数组
+  const getPageNumbers = () => {
+    const pages: (number | 'ellipsis')[] = []
+    if (totalPages <= 7) {
+      // 总页数不多，全部显示
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      // 总是显示第一页
+      pages.push(1)
+      
+      if (page > 3) {
+        pages.push('ellipsis')
+      }
+      
+      // 当前页附近的页码
+      const start = Math.max(2, page - 1)
+      const end = Math.min(totalPages - 1, page + 1)
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i)
+      }
+      
+      if (page < totalPages - 2) {
+        pages.push('ellipsis')
+      }
+      
+      // 总是显示最后一页
+      if (totalPages > 1) {
+        pages.push(totalPages)
+      }
+    }
+    return pages
+  }
+
+  // 处理页码跳转
+  const handleJumpPage = () => {
+    const targetPage = parseInt(jumpPage, 10)
+    if (!isNaN(targetPage) && targetPage >= 1 && targetPage <= totalPages) {
+      setPage(targetPage)
+      setJumpPage('')
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
-          <DialogTitle className="text-xl">表达方式审核</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-5xl w-[95vw] sm:w-full h-[90vh] sm:h-[85vh] flex flex-col p-0">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 border-b shrink-0">
+          <DialogTitle className="text-lg sm:text-xl">表达方式审核</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">
             审核麦麦学习到的表达方式。通过审核的项目才会被使用（可在配置中调整），被拒绝的项目永远不会被使用。
           </DialogDescription>
           
           {/* 统计卡片 */}
-          <div className="grid grid-cols-4 gap-3 mt-4">
-            <div className="rounded-lg border p-3 text-center">
-              <div className="text-2xl font-bold text-orange-500">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4">
+            <div className="rounded-lg border p-2 sm:p-3 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-orange-500">
                 {statsLoading ? '-' : stats?.unchecked ?? 0}
               </div>
               <div className="text-xs text-muted-foreground">待审核</div>
             </div>
-            <div className="rounded-lg border p-3 text-center">
-              <div className="text-2xl font-bold text-green-500">
+            <div className="rounded-lg border p-2 sm:p-3 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-green-500">
                 {statsLoading ? '-' : stats?.passed ?? 0}
               </div>
               <div className="text-xs text-muted-foreground">已通过</div>
             </div>
-            <div className="rounded-lg border p-3 text-center">
-              <div className="text-2xl font-bold text-red-500">
+            <div className="rounded-lg border p-2 sm:p-3 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-red-500">
                 {statsLoading ? '-' : stats?.rejected ?? 0}
               </div>
               <div className="text-xs text-muted-foreground">已拒绝</div>
             </div>
-            <div className="rounded-lg border p-3 text-center">
-              <div className="text-2xl font-bold text-blue-500">
+            <div className="rounded-lg border p-2 sm:p-3 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-blue-500">
                 {statsLoading ? '-' : stats?.total ?? 0}
               </div>
               <div className="text-xs text-muted-foreground">总计</div>
@@ -344,32 +404,39 @@ export function ExpressionReviewer({ open, onOpenChange }: ExpressionReviewerPro
         </DialogHeader>
 
         {/* 筛选和操作栏 */}
-        <div className="px-6 py-3 border-b shrink-0 space-y-3">
+        <div className="px-4 sm:px-6 py-3 border-b shrink-0 space-y-3">
           <Tabs
             value={filterType}
             onValueChange={(v) => setFilterType(v as typeof filterType)}
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="unchecked" className="gap-1">
-                <Clock className="h-4 w-4" />
-                待审核 ({stats?.unchecked ?? 0})
+              <TabsTrigger value="unchecked" className="gap-1 text-xs sm:text-sm px-1 sm:px-3">
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">待审核</span>
+                <span className="sm:hidden">待审</span>
+                <span className="hidden sm:inline">({stats?.unchecked ?? 0})</span>
               </TabsTrigger>
-              <TabsTrigger value="passed" className="gap-1">
-                <CheckCircle2 className="h-4 w-4" />
-                已通过 ({stats?.passed ?? 0})
+              <TabsTrigger value="passed" className="gap-1 text-xs sm:text-sm px-1 sm:px-3">
+                <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">已通过</span>
+                <span className="sm:hidden">通过</span>
+                <span className="hidden sm:inline">({stats?.passed ?? 0})</span>
               </TabsTrigger>
-              <TabsTrigger value="rejected" className="gap-1">
-                <XCircle className="h-4 w-4" />
-                已拒绝 ({stats?.rejected ?? 0})
+              <TabsTrigger value="rejected" className="gap-1 text-xs sm:text-sm px-1 sm:px-3">
+                <XCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">已拒绝</span>
+                <span className="sm:hidden">拒绝</span>
+                <span className="hidden sm:inline">({stats?.rejected ?? 0})</span>
               </TabsTrigger>
-              <TabsTrigger value="all" className="gap-1">
-                全部 ({stats?.total ?? 0})
+              <TabsTrigger value="all" className="gap-1 text-xs sm:text-sm px-1 sm:px-3">
+                <span>全部</span>
+                <span className="hidden sm:inline">({stats?.total ?? 0})</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -380,50 +447,57 @@ export function ExpressionReviewer({ open, onOpenChange }: ExpressionReviewerPro
                 className="pl-9"
               />
             </div>
-            <Button variant="outline" size="icon" onClick={handleSearch}>
-              <Search className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => {
-                loadList()
-                loadStats()
-              }}
-              disabled={loading}
-            >
-              <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={handleSearch}>
+                <Search className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  loadList()
+                  loadStats()
+                }}
+                disabled={loading}
+              >
+                <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
+              </Button>
+            </div>
             
             {/* 批量操作按钮 */}
             {filterType === 'unchecked' && selectedIds.size > 0 && (
-              <>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button
                   variant="default"
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none"
                   onClick={() => handleBatchReview(false)}
                   disabled={loading}
                 >
                   <CheckCircle2 className="h-4 w-4 mr-1" />
-                  批量通过 ({selectedIds.size})
+                  <span className="hidden sm:inline">批量通过</span>
+                  <span className="sm:hidden">通过</span>
+                  ({selectedIds.size})
                 </Button>
                 <Button
                   variant="destructive"
                   size="sm"
+                  className="flex-1 sm:flex-none"
                   onClick={() => handleBatchReview(true)}
                   disabled={loading}
                 >
                   <XCircle className="h-4 w-4 mr-1" />
-                  批量拒绝 ({selectedIds.size})
+                  <span className="hidden sm:inline">批量拒绝</span>
+                  <span className="sm:hidden">拒绝</span>
+                  ({selectedIds.size})
                 </Button>
-              </>
+              </div>
             )}
           </div>
         </div>
 
         {/* 列表区域 */}
-        <ScrollArea className="flex-1 px-6">
+        <ScrollArea className="flex-1 px-4 sm:px-6">
           {loading && expressions.length === 0 ? (
             <div className="flex items-center justify-center h-40">
               <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -453,12 +527,12 @@ export function ExpressionReviewer({ open, onOpenChange }: ExpressionReviewerPro
                 <div
                   key={expr.id}
                   className={cn(
-                    'rounded-lg border p-4 space-y-3 transition-colors',
+                    'rounded-lg border p-3 sm:p-4 space-y-2 sm:space-y-3 transition-colors',
                     selectedIds.has(expr.id) && 'bg-accent border-primary',
                     processingIds.has(expr.id) && 'opacity-50'
                   )}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-2 sm:gap-3">
                     {/* 选择框（仅待审核显示） */}
                     {filterType === 'unchecked' && (
                       <Checkbox
@@ -484,65 +558,67 @@ export function ExpressionReviewer({ open, onOpenChange }: ExpressionReviewerPro
                       </div>
 
                       {/* 元信息 */}
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs text-muted-foreground">
                         <span>#{expr.id}</span>
                         <span>·</span>
-                        <span title={getChatName(expr.chat_id)} className="truncate max-w-32">
+                        <span title={getChatName(expr.chat_id)} className="truncate max-w-24 sm:max-w-32">
                           {getChatName(expr.chat_id)}
                         </span>
                         <span>·</span>
                         <span>{formatTime(expr.create_date)}</span>
-                        {getStatusBadge(expr)}
-                        {getModifierBadge(expr.modified_by)}
+                        <div className="flex items-center gap-1">
+                          {getStatusBadge(expr)}
+                          {getModifierBadge(expr.modified_by)}
+                        </div>
                       </div>
                     </div>
 
                     {/* 操作按钮 */}
-                    <div className="flex flex-col gap-2 shrink-0">
+                    <div className="flex flex-col gap-1 sm:gap-2 shrink-0">
                       {filterType === 'unchecked' ? (
                         <>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50 h-8 sm:h-9 px-2 sm:px-3"
                             onClick={() => handleReview(expr.id, false)}
                             disabled={processingIds.has(expr.id)}
                           >
-                            <CheckCircle2 className="h-4 w-4 mr-1" />
-                            通过
+                            <CheckCircle2 className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">通过</span>
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 sm:h-9 px-2 sm:px-3"
                             onClick={() => handleReview(expr.id, true)}
                             disabled={processingIds.has(expr.id)}
                           >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            拒绝
+                            <XCircle className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">拒绝</span>
                           </Button>
                         </>
                       ) : filterType === 'passed' ? (
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 sm:h-9 px-2 sm:px-3"
                           onClick={() => handleReview(expr.id, true)}
                           disabled={processingIds.has(expr.id)}
                         >
-                          <XCircle className="h-4 w-4 mr-1" />
-                          改为拒绝
+                          <XCircle className="h-4 w-4 sm:mr-1" />
+                          <span className="hidden sm:inline">改为拒绝</span>
                         </Button>
                       ) : filterType === 'rejected' ? (
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          className="text-green-600 hover:text-green-700 hover:bg-green-50 h-8 sm:h-9 px-2 sm:px-3"
                           onClick={() => handleReview(expr.id, false)}
                           disabled={processingIds.has(expr.id)}
                         >
-                          <CheckCircle2 className="h-4 w-4 mr-1" />
-                          改为通过
+                          <CheckCircle2 className="h-4 w-4 sm:mr-1" />
+                          <span className="hidden sm:inline">改为通过</span>
                         </Button>
                       ) : (
                         // all 模式下显示两个按钮
@@ -551,45 +627,45 @@ export function ExpressionReviewer({ open, onOpenChange }: ExpressionReviewerPro
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50 h-8 sm:h-9 px-2 sm:px-3"
                               onClick={() => handleReview(expr.id, false)}
                               disabled={processingIds.has(expr.id)}
                             >
-                              <CheckCircle2 className="h-4 w-4 mr-1" />
-                              改为通过
+                              <CheckCircle2 className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">改为通过</span>
                             </Button>
                           ) : expr.checked ? (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 sm:h-9 px-2 sm:px-3"
                               onClick={() => handleReview(expr.id, true)}
                               disabled={processingIds.has(expr.id)}
                             >
-                              <XCircle className="h-4 w-4 mr-1" />
-                              改为拒绝
+                              <XCircle className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">改为拒绝</span>
                             </Button>
                           ) : (
                             <>
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50 h-8 sm:h-9 px-2 sm:px-3"
                                 onClick={() => handleReview(expr.id, false)}
                                 disabled={processingIds.has(expr.id)}
                               >
-                                <CheckCircle2 className="h-4 w-4 mr-1" />
-                                通过
+                                <CheckCircle2 className="h-4 w-4 sm:mr-1" />
+                                <span className="hidden sm:inline">通过</span>
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 sm:h-9 px-2 sm:px-3"
                                 onClick={() => handleReview(expr.id, true)}
                                 disabled={processingIds.has(expr.id)}
                               >
-                                <XCircle className="h-4 w-4 mr-1" />
-                                拒绝
+                                <XCircle className="h-4 w-4 sm:mr-1" />
+                                <span className="hidden sm:inline">拒绝</span>
                               </Button>
                             </>
                           )}
@@ -604,28 +680,102 @@ export function ExpressionReviewer({ open, onOpenChange }: ExpressionReviewerPro
         </ScrollArea>
 
         {/* 分页 */}
-        <div className="px-6 py-3 border-t shrink-0 flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            共 {total} 条，第 {page}/{totalPages || 1} 页
+        <div className="px-4 sm:px-6 py-3 border-t shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* 左侧：每页显示数量 */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="hidden sm:inline">每页</span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(v) => {
+                setPageSize(parseInt(v, 10))
+                setPage(1) // 切换每页数量时重置到第一页
+              }}
+            >
+              <SelectTrigger className="w-[70px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="hidden sm:inline">条</span>
+            <span className="text-muted-foreground">共 {total} 条</span>
           </div>
-          <div className="flex items-center gap-2">
+
+          {/* 中间：页码导航 */}
+          <Pagination className="mx-0 w-auto">
+            <PaginationContent>
+              <PaginationItem>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1 || loading}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </PaginationItem>
+              
+              {getPageNumbers().map((pageNum, idx) => (
+                <PaginationItem key={idx}>
+                  {pageNum === 'ellipsis' ? (
+                    <PaginationEllipsis />
+                  ) : (
+                    <PaginationLink
+                      href="#"
+                      isActive={pageNum === page}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setPage(pageNum)
+                      }}
+                      className="h-8 w-8 cursor-pointer"
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  )}
+                </PaginationItem>
+              ))}
+              
+              <PaginationItem>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages || loading}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+
+          {/* 右侧：跳转 */}
+          <div className="hidden sm:flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">跳至</span>
+            <Input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={jumpPage}
+              onChange={(e) => setJumpPage(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleJumpPage()}
+              className="w-16 h-8 text-center"
+              placeholder={page.toString()}
+            />
+            <span className="text-muted-foreground">页</span>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1 || loading}
+              className="h-8"
+              onClick={handleJumpPage}
+              disabled={loading}
             >
-              <ChevronLeft className="h-4 w-4" />
-              上一页
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages || loading}
-            >
-              下一页
-              <ChevronRight className="h-4 w-4" />
+              跳转
             </Button>
           </div>
         </div>

@@ -339,10 +339,10 @@ export default function PackDetailPage() {
       <Separator />
       
       {/* 内容统计 */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardContent className="flex items-center gap-3 py-4">
-            <Server className="w-8 h-8 text-blue-500" />
+            <Server className="w-8 h-8 text-blue-500 flex-shrink-0" />
             <div>
               <p className="text-2xl font-bold">{pack.providers.length}</p>
               <p className="text-sm text-muted-foreground">API 提供商</p>
@@ -351,7 +351,7 @@ export default function PackDetailPage() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 py-4">
-            <Layers className="w-8 h-8 text-green-500" />
+            <Layers className="w-8 h-8 text-green-500 flex-shrink-0" />
             <div>
               <p className="text-2xl font-bold">{pack.models.length}</p>
               <p className="text-sm text-muted-foreground">模型配置</p>
@@ -360,7 +360,7 @@ export default function PackDetailPage() {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 py-4">
-            <ListChecks className="w-8 h-8 text-purple-500" />
+            <ListChecks className="w-8 h-8 text-purple-500 flex-shrink-0" />
             <div>
               <p className="text-2xl font-bold">{Object.keys(pack.task_config).length}</p>
               <p className="text-sm text-muted-foreground">任务配置</p>
@@ -371,18 +371,24 @@ export default function PackDetailPage() {
       
       {/* 详细内容 */}
       <Tabs defaultValue="providers" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="providers">
-            <Server className="w-4 h-4 mr-2" />
-            提供商 ({pack.providers.length})
+        <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:flex">
+          <TabsTrigger value="providers" className="gap-1 sm:gap-2">
+            <Server className="w-4 h-4" />
+            <span className="hidden sm:inline">提供商</span>
+            <span className="sm:hidden">提供商</span>
+            <span className="hidden sm:inline">({pack.providers.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="models">
-            <Layers className="w-4 h-4 mr-2" />
-            模型 ({pack.models.length})
+          <TabsTrigger value="models" className="gap-1 sm:gap-2">
+            <Layers className="w-4 h-4" />
+            <span className="hidden sm:inline">模型</span>
+            <span className="sm:hidden">模型</span>
+            <span className="hidden sm:inline">({pack.models.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="tasks">
-            <ListChecks className="w-4 h-4 mr-2" />
-            任务配置 ({Object.keys(pack.task_config).length})
+          <TabsTrigger value="tasks" className="gap-1 sm:gap-2">
+            <ListChecks className="w-4 h-4" />
+            <span className="hidden sm:inline">任务配置</span>
+            <span className="sm:hidden">任务</span>
+            <span className="hidden sm:inline">({Object.keys(pack.task_config).length})</span>
           </TabsTrigger>
         </TabsList>
         
@@ -393,28 +399,30 @@ export default function PackDetailPage() {
               <CardDescription>模板中包含的 API 提供商配置（不含 API Key）</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>名称</TableHead>
-                    <TableHead>Base URL</TableHead>
-                    <TableHead>类型</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pack.providers.map(provider => (
-                    <TableRow key={provider.name}>
-                      <TableCell className="font-medium">{provider.name}</TableCell>
-                      <TableCell className="text-muted-foreground font-mono text-sm">
-                        {provider.base_url}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{provider.client_type}</Badge>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>名称</TableHead>
+                      <TableHead>Base URL</TableHead>
+                      <TableHead>类型</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {pack.providers.map(provider => (
+                      <TableRow key={provider.name}>
+                        <TableCell className="font-medium whitespace-nowrap">{provider.name}</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm max-w-[200px] truncate">
+                          {provider.base_url}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{provider.client_type}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -426,30 +434,32 @@ export default function PackDetailPage() {
               <CardDescription>模板中包含的模型配置</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>模型名称</TableHead>
-                    <TableHead>标识符</TableHead>
-                    <TableHead>提供商</TableHead>
-                    <TableHead className="text-right">价格 (入/出)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pack.models.map(model => (
-                    <TableRow key={model.name}>
-                      <TableCell className="font-medium">{model.name}</TableCell>
-                      <TableCell className="text-muted-foreground font-mono text-sm">
-                        {model.model_identifier}
-                      </TableCell>
-                      <TableCell>{model.api_provider}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        ¥{model.price_in} / ¥{model.price_out}
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>模型名称</TableHead>
+                      <TableHead>标识符</TableHead>
+                      <TableHead>提供商</TableHead>
+                      <TableHead className="text-right">价格 (入/出)</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {pack.models.map(model => (
+                      <TableRow key={model.name}>
+                        <TableCell className="font-medium whitespace-nowrap">{model.name}</TableCell>
+                        <TableCell className="text-muted-foreground font-mono text-sm max-w-[150px] truncate">
+                          {model.model_identifier}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">{model.api_provider}</TableCell>
+                        <TableCell className="text-right text-muted-foreground whitespace-nowrap">
+                          ¥{model.price_in} / ¥{model.price_out}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -897,7 +907,7 @@ function PackDetailSkeleton() {
           <Skeleton className="h-px w-full" />
           
           {/* 内容统计卡片 */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Skeleton className="h-24" />
             <Skeleton className="h-24" />
             <Skeleton className="h-24" />

@@ -255,7 +255,7 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
           // ========== 第二级：聊天日志列表 ==========
           <>
             {/* 返回按钮和聊天信息 */}
-            <div className="flex items-center gap-4 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
               <Button variant="outline" size="sm" onClick={handleBackToOverview}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 返回聊天列表
@@ -269,21 +269,21 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
 
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div>
                     <CardTitle>回复生成记录</CardTitle>
                     <CardDescription>
                       {selectedChat ? getChatName(selectedChat.chat_id) : ''}
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <div className="flex items-center gap-1">
                       <Input
                         placeholder="搜索提示词内容..."
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        className="w-48"
+                        className="w-full sm:w-48"
                       />
                       <Button variant="outline" size="icon" onClick={handleSearch}>
                         <Search className="h-4 w-4" />
@@ -295,7 +295,7 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
                       )}
                     </div>
                     <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger className="w-full sm:w-32">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -359,7 +359,7 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
                     </div>
 
                     {/* 分页控件 */}
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t">
                       <div className="text-sm text-muted-foreground">
                         共 {chatLogs.total} 条记录，第 {page} / {totalPages} 页
                       </div>
@@ -369,6 +369,7 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
                           size="sm"
                           onClick={() => setPage(1)}
                           disabled={page === 1}
+                          className="hidden sm:flex"
                         >
                           <ChevronsLeft className="h-4 w-4" />
                         </Button>
@@ -380,7 +381,7 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
                         >
                           <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <div className="flex items-center gap-2">
+                        <div className="hidden sm:flex items-center gap-2">
                           <Input
                             type="number"
                             min={1}
@@ -395,6 +396,9 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
                             跳转
                           </Button>
                         </div>
+                        <span className="sm:hidden text-sm text-muted-foreground">
+                          {page}/{totalPages}
+                        </span>
                         <Button
                           variant="outline"
                           size="sm"
@@ -408,6 +412,7 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
                           size="sm"
                           onClick={() => setPage(totalPages)}
                           disabled={page === totalPages}
+                          className="hidden sm:flex"
                         >
                           <ChevronsRight className="h-4 w-4" />
                         </Button>
@@ -452,7 +457,7 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
                       <Clock className="h-4 w-4" />
                       基本信息
                     </h3>
-                    <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
                       <div>
                         <div className="text-xs text-muted-foreground mb-1">聊天</div>
                         <div className="text-sm" title={selectedLog.chat_id}>{getChatName(selectedLog.chat_id)}</div>
@@ -503,7 +508,7 @@ export function ReplierMonitor({ autoRefresh, refreshKey }: ReplierMonitorProps)
                       <Zap className="h-4 w-4" />
                       性能统计
                     </h3>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <Card>
                         <CardHeader className="p-4 pb-2">
                           <CardTitle className="text-xs text-muted-foreground">提示词构建</CardTitle>
