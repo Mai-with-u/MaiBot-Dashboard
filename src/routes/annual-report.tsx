@@ -295,41 +295,59 @@ export function AnnualReportPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>话痨群组 TOP3</CardTitle>
+                <CardTitle>话痨群组 TOP5</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {data.social_network.top_groups.map((group: { group_id: string; group_name: string; message_count: number }, index: number) => (
-                    <div key={group.group_id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Badge variant={index === 0 ? "default" : "secondary"} className="h-6 w-6 rounded-full p-0 flex items-center justify-center">
-                          {index + 1}
-                        </Badge>
-                        <span className="font-medium truncate max-w-[150px]">{group.group_name}</span>
+                <div className="space-y-3">
+                  {data.social_network.top_groups.length > 0 ? (
+                    data.social_network.top_groups.map((group: { group_id: string; group_name: string; message_count: number; is_webui?: boolean }, index: number) => (
+                      <div key={group.group_id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Badge variant={index === 0 ? "default" : "secondary"} className="h-6 w-6 rounded-full p-0 flex items-center justify-center shrink-0">
+                            {index + 1}
+                          </Badge>
+                          <span className="font-medium truncate max-w-[120px]">{group.group_name}</span>
+                          {group.is_webui && (
+                            <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 bg-blue-50 text-blue-600 border-blue-200">
+                              WebUI
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-muted-foreground text-sm shrink-0">{group.message_count} 条消息</span>
                       </div>
-                      <span className="text-muted-foreground text-sm">{group.message_count} 条消息</span>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">暂无数据</div>
+                  )}
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>年度最佳损友 TOP3</CardTitle>
+                <CardTitle>年度最佳损友 TOP5</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {data.social_network.top_users.map((user: { user_id: string; user_nickname: string; message_count: number }, index: number) => (
-                    <div key={user.user_id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Badge variant={index === 0 ? "default" : "secondary"} className="h-6 w-6 rounded-full p-0 flex items-center justify-center">
-                          {index + 1}
-                        </Badge>
-                        <span className="font-medium truncate max-w-[150px]">{user.user_nickname}</span>
+                <div className="space-y-3">
+                  {data.social_network.top_users.length > 0 ? (
+                    data.social_network.top_users.map((user: { user_id: string; user_nickname: string; message_count: number; is_webui?: boolean }, index: number) => (
+                      <div key={user.user_id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Badge variant={index === 0 ? "default" : "secondary"} className="h-6 w-6 rounded-full p-0 flex items-center justify-center shrink-0">
+                            {index + 1}
+                          </Badge>
+                          <span className="font-medium truncate max-w-[120px]">{user.user_nickname}</span>
+                          {user.is_webui && (
+                            <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 bg-blue-50 text-blue-600 border-blue-200">
+                              WebUI
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-muted-foreground text-sm shrink-0">{user.message_count} 次互动</span>
                       </div>
-                      <span className="text-muted-foreground text-sm">{user.message_count} 次互动</span>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">暂无数据</div>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -18,11 +18,13 @@ export interface SocialNetworkData {
     group_id: string
     group_name: string
     message_count: number
+    is_webui?: boolean
   }>
   top_users: Array<{
     user_id: string
     user_nickname: string
     message_count: number
+    is_webui?: boolean
   }>
   at_count: number
   mentioned_count: number
