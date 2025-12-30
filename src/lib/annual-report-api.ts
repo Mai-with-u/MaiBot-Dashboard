@@ -115,6 +115,7 @@ export interface AchievementData {
 
 export interface AnnualReportData {
   year: number
+  bot_name: string
   generated_at: string
   time_footprint: TimeFootprintData
   social_network: SocialNetworkData

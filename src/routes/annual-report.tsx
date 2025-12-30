@@ -105,10 +105,10 @@ function getExpensiveThinkingMetaphor(cost: number): string {
   return "小小思考，不足挂齿"
 }
 
-function getFavoriteReplyMetaphor(count: number): string {
+function getFavoriteReplyMetaphor(count: number, botName: string): string {
   if (count >= 100) return "这句话简直是万能钥匙！"
   if (count >= 50) return "百试不爽的经典回复"
-  if (count >= 20) return "麦麦的口头禅"
+  if (count >= 20) return `${botName}的口头禅`
   if (count >= 10) return "常用语录之一"
   return "偶尔用用的小确幸"
 }
@@ -182,7 +182,7 @@ export function AnnualReportPage() {
             <div className="relative z-10 flex flex-col items-center text-center">
               <Bot className="mb-4 h-16 w-16 animate-bounce" />
               <h1 className="text-4xl font-bold tracking-tighter sm:text-6xl">
-                麦麦 {data.year} 年度总结
+                {data.bot_name} {data.year} 年度总结
               </h1>
               <p className="mt-4 max-w-2xl text-lg opacity-90">
                 连接与成长 · Connection & Growth
@@ -233,7 +233,7 @@ export function AnnualReportPage() {
           <Card className="overflow-hidden">
             <CardHeader>
               <CardTitle>24小时活跃时钟</CardTitle>
-              <CardDescription>麦麦在一天中各个时段的活跃程度</CardDescription>
+              <CardDescription>{data.bot_name}在一天中各个时段的活跃程度</CardDescription>
             </CardHeader>
             <CardContent className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -275,7 +275,7 @@ export function AnnualReportPage() {
             <StatCard
               title="社交圈子"
               value={`${data.social_network.total_groups} 个群组`}
-              description="麦麦加入的群组总数"
+              description={`${data.bot_name}加入的群组总数`}
               icon={<Users className="h-4 w-4" />}
             />
             <StatCard
@@ -424,7 +424,7 @@ export function AnnualReportPage() {
                <Card>
                  <CardHeader>
                    <CardTitle>最喜欢的回复模型 TOP5</CardTitle>
-                   <CardDescription>麦麦用来回复消息的模型偏好</CardDescription>
+                   <CardDescription>{data.bot_name}用来回复消息的模型偏好</CardDescription>
                  </CardHeader>
                  <CardContent>
                    <div className="space-y-3">
@@ -556,7 +556,7 @@ export function AnnualReportPage() {
                       <span className="text-2xl">🌙</span>
                       深夜还在回复
                     </CardTitle>
-                    <CardDescription>凌晨 {data.expression_vibe.late_night_reply.time}，麦麦还在回复...</CardDescription>
+                    <CardDescription>凌晨 {data.expression_vibe.late_night_reply.time}，{data.bot_name}还在回复...</CardDescription>
                   </CardHeader>
                   <CardContent className="text-center">
                     <p className="text-lg italic text-muted-foreground">
@@ -583,7 +583,7 @@ export function AnnualReportPage() {
                       "{data.expression_vibe.favorite_reply.content}"
                     </p>
                     <p className="mt-4 text-sm text-muted-foreground">
-                      {getFavoriteReplyMetaphor(data.expression_vibe.favorite_reply.count)}
+                      {getFavoriteReplyMetaphor(data.expression_vibe.favorite_reply.count, data.bot_name)}
                     </p>
                   </CardContent>
                 </Card>
@@ -632,7 +632,7 @@ export function AnnualReportPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>印象最深刻的表达风格</CardTitle>
-                  <CardDescription>麦麦最常使用的表达方式</CardDescription>
+                  <CardDescription>{data.bot_name}最常使用的表达方式</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
