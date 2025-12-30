@@ -27,6 +27,8 @@ export interface ChatConfig {
   max_context_size: number
   planner_smooth: number
   think_mode: 'classic' | 'deep' | 'dynamic'
+  plan_reply_log_max_per_chat: number
+  llm_quote: boolean
   enable_talk_value_rules: boolean
   talk_value_rules: Array<{
     target: string

@@ -34,6 +34,107 @@ import { cn } from '@/lib/utils'
 // 颜色常量
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d']
 
+// 动态比喻生成函数
+function getOnlineHoursMetaphor(hours: number): string {
+  if (hours >= 8760) return "相当于全年无休，7x24小时在线！"
+  if (hours >= 5000) return "相当于一位全职员工的年工作时长"
+  if (hours >= 2000) return "相当于看完了 1000 部电影"
+  if (hours >= 1000) return "相当于环球飞行 80 次"
+  if (hours >= 500) return "相当于读完了 100 本书"
+  if (hours >= 100) return "相当于马拉松跑了 25 次"
+  return "虽然不多，但每一刻都很珍贵"
+}
+
+function getMidnightMetaphor(count: number): string {
+  if (count >= 1000) return "夜深人静时的知心好友"
+  if (count >= 500) return "午夜场的常客"
+  if (count >= 100) return "偶尔熬夜的小伙伴"
+  if (count >= 50) return "深夜有时也会陪你聊聊"
+  return "早睡早起，健康作息"
+}
+
+function getTokenMetaphor(tokens: number): string {
+  const millions = tokens / 1000000
+  if (millions >= 100) return "思考量堪比一座图书馆"
+  if (millions >= 50) return "相当于写了一部百科全书"
+  if (millions >= 10) return "脑细胞估计消耗了不少"
+  if (millions >= 1) return "也算是费了一番脑筋"
+  return "轻轻松松，游刃有余"
+}
+
+function getCostMetaphor(cost: number): string {
+  if (cost >= 1000) return "这钱够吃一年的泡面了"
+  if (cost >= 500) return "相当于买了一台游戏机"
+  if (cost >= 100) return "够请大家喝几杯奶茶"
+  if (cost >= 50) return "一顿火锅的钱"
+  if (cost >= 10) return "几杯咖啡的价格"
+  return "省钱小能手"
+}
+
+function getSilenceMetaphor(rate: number): string {
+  if (rate >= 80) return "沉默是金，惜字如金"
+  if (rate >= 60) return "话不多但句句到位"
+  if (rate >= 40) return "该说的时候才开口"
+  if (rate >= 20) return "能聊的都聊了"
+  return "话痨本痨，有问必答"
+}
+
+function getImageMetaphor(count: number): string {
+  if (count >= 10000) return "眼睛都快看花了"
+  if (count >= 5000) return "堪比专业摄影师的阅片量"
+  if (count >= 1000) return "看图小达人"
+  if (count >= 500) return "图片鉴赏家"
+  if (count >= 100) return "偶尔欣赏一下美图"
+  return "图片？有空再看"
+}
+
+function getRejectedMetaphor(count: number): string {
+  if (count >= 500) return "在不断的纠正中成长"
+  if (count >= 200) return "学习永无止境"
+  if (count >= 100) return "虚心接受，积极改正"
+  if (count >= 50) return "偶尔也会犯错"
+  if (count >= 10) return "表现还算不错"
+  return "完美表达，无需纠正"
+}
+
+function getExpensiveThinkingMetaphor(cost: number): string {
+  if (cost >= 1) return "这次思考的价值堪比一顿大餐！"
+  if (cost >= 0.5) return "为了这个问题，我可是认真思考了！"
+  if (cost >= 0.1) return "下了点功夫，值得的！"
+  if (cost >= 0.01) return "花了点小钱，但很值得"
+  return "小小思考，不足挂齿"
+}
+
+function getFavoriteReplyMetaphor(count: number): string {
+  if (count >= 100) return "这句话简直是万能钥匙！"
+  if (count >= 50) return "百试不爽的经典回复"
+  if (count >= 20) return "麦麦的口头禅"
+  if (count >= 10) return "常用语录之一"
+  return "偶尔用用的小确幸"
+}
+
+function getNightOwlMetaphor(isNightOwl: boolean, midnightCount: number): string {
+  if (isNightOwl) {
+    if (midnightCount >= 1000) return "深夜的守护者，黑暗中的光芒"
+    if (midnightCount >= 500) return "月亮是我的好朋友"
+    if (midnightCount >= 100) return "越夜越精神，夜晚才是主场"
+    return "偶尔熬夜，享受宁静时光"
+  } else {
+    if (midnightCount <= 10) return "作息规律，健康生活的典范"
+    if (midnightCount <= 50) return "早睡早起，偶尔也会熬个夜"
+    return "虽然是早起鸟，但也会守候深夜"
+  }
+}
+
+function getBusiestDayMetaphor(count: number): string {
+  if (count >= 1000) return "忙到飞起，键盘都要冒烟了"
+  if (count >= 500) return "这天简直是话痨附体"
+  if (count >= 200) return "社交达人上线"
+  if (count >= 100) return "比平时活跃不少"
+  if (count >= 50) return "小忙一下"
+  return "还算轻松的一天"
+}
+
 export function AnnualReportPage() {
   const [year] = useState(2025)
   const [data, setData] = useState<AnnualReportData | null>(null)
@@ -106,29 +207,25 @@ export function AnnualReportPage() {
             <StatCard
               title="年度在线时长"
               value={`${data.time_footprint.total_online_hours} 小时`}
-              description="相当于陪伴大家绕了太阳一圈"
+              description={getOnlineHoursMetaphor(data.time_footprint.total_online_hours)}
               icon={<Clock className="h-4 w-4" />}
             />
             <StatCard
               title="最忙碌的一天"
               value={data.time_footprint.busiest_day || 'N/A'}
-              description={`处理了 ${data.time_footprint.busiest_day_count} 条消息`}
+              description={getBusiestDayMetaphor(data.time_footprint.busiest_day_count)}
               icon={<Calendar className="h-4 w-4" />}
             />
             <StatCard
               title="深夜互动 (0-4点)"
               value={`${data.time_footprint.midnight_chat_count} 次`}
-              description="在万籁俱寂时交换秘密"
+              description={getMidnightMetaphor(data.time_footprint.midnight_chat_count)}
               icon={<Moon className="h-4 w-4" />}
             />
             <StatCard
               title="作息属性"
               value={data.time_footprint.is_night_owl ? '夜猫子' : '早起鸟'}
-              description={
-                data.time_footprint.is_night_owl
-                  ? '越夜越精神'
-                  : '早睡早起身体好'
-              }
+              description={getNightOwlMetaphor(data.time_footprint.is_night_owl, data.time_footprint.midnight_chat_count)}
               icon={data.time_footprint.is_night_owl ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
             />
           </div>
@@ -178,7 +275,7 @@ export function AnnualReportPage() {
             <StatCard
               title="社交圈子"
               value={`${data.social_network.total_groups} 个群组`}
-              description={`今年新认识了 ${data.social_network.new_friends_count} 位朋友`}
+              description="麦麦加入的群组总数"
               icon={<Users className="h-4 w-4" />}
             />
             <StatCard
@@ -249,19 +346,19 @@ export function AnnualReportPage() {
             <StatCard
               title="年度 Token 消耗"
               value={(data.brain_power.total_tokens / 1000000).toFixed(2) + ' M'}
-              description="连起来可以绕地球 0.5 圈"
+              description={getTokenMetaphor(data.brain_power.total_tokens)}
               icon={<Zap className="h-4 w-4" />}
             />
             <StatCard
               title="年度总花费"
               value={`$${data.brain_power.total_cost.toFixed(2)}`}
-              description="为了陪大家聊天也是拼了"
+              description={getCostMetaphor(data.brain_power.total_cost)}
               icon={<span className="font-bold">$</span>}
             />
             <StatCard
               title="高冷指数"
               value={`${data.brain_power.silence_rate}%`}
-              description={`有 ${data.brain_power.no_reply_count} 次选择了沉默`}
+              description={getSilenceMetaphor(data.brain_power.silence_rate)}
               icon={<Moon className="h-4 w-4" />}
             />
             <StatCard
@@ -304,30 +401,68 @@ export function AnnualReportPage() {
                 </CardContent>
              </Card>
              
-             <Card>
-               <CardHeader>
-                 <CardTitle>烧钱大户 TOP3</CardTitle>
-                 <CardDescription>谁消耗了最多的 API 额度</CardDescription>
-               </CardHeader>
-               <CardContent>
-                 <div className="space-y-6">
-                   {data.brain_power.top_token_consumers.map((consumer: { user_id: string; cost: number; tokens: number }) => (
-                     <div key={consumer.user_id} className="space-y-2">
-                       <div className="flex justify-between text-sm font-medium">
-                         <span>用户 {consumer.user_id}</span>
-                         <span>${consumer.cost.toFixed(2)}</span>
+             {/* 最喜欢的回复模型 TOP5 */}
+             {data.brain_power.top_reply_models && data.brain_power.top_reply_models.length > 0 && (
+               <Card>
+                 <CardHeader>
+                   <CardTitle>最喜欢的回复模型 TOP5</CardTitle>
+                   <CardDescription>麦麦用来回复消息的模型偏好</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                   <div className="space-y-3">
+                     {data.brain_power.top_reply_models.map((item: { model: string; count: number }, index: number) => {
+                       const maxCount = data.brain_power.top_reply_models[0]?.count || 1
+                       const percentage = Math.round((item.count / maxCount) * 100)
+                       return (
+                         <div key={item.model} className="space-y-1">
+                           <div className="flex justify-between text-sm">
+                             <span className="font-medium truncate max-w-[200px]">{item.model}</span>
+                             <span className="text-muted-foreground">{item.count.toLocaleString()} 次</span>
+                           </div>
+                           <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                             <div 
+                               className="h-full transition-all duration-500" 
+                               style={{ 
+                                 width: `${percentage}%`,
+                                 backgroundColor: COLORS[index % COLORS.length]
+                               }} 
+                             />
+                           </div>
+                         </div>
+                       )
+                     })}
+                   </div>
+                 </CardContent>
+               </Card>
+             )}
+             
+             {/* 烧钱大户 - 只有有有效用户数据时才显示 */}
+             {data.brain_power.top_token_consumers && data.brain_power.top_token_consumers.length > 0 && (
+               <Card>
+                 <CardHeader>
+                   <CardTitle>烧钱大户 TOP3</CardTitle>
+                   <CardDescription>谁消耗了最多的 API 额度</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                   <div className="space-y-6">
+                     {data.brain_power.top_token_consumers.map((consumer: { user_id: string; cost: number; tokens: number }) => (
+                       <div key={consumer.user_id} className="space-y-2">
+                         <div className="flex justify-between text-sm font-medium">
+                           <span>用户 {consumer.user_id}</span>
+                           <span>${consumer.cost.toFixed(2)}</span>
+                         </div>
+                         <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                           <div 
+                             className="h-full bg-primary transition-all duration-500" 
+                             style={{ width: `${(consumer.cost / (data.brain_power.top_token_consumers[0]?.cost || 1)) * 100}%` }} 
+                           />
+                         </div>
                        </div>
-                       <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
-                         <div 
-                           className="h-full bg-primary transition-all duration-500" 
-                           style={{ width: `${(consumer.cost / (data.brain_power.top_token_consumers[0]?.cost || 1)) * 100}%` }} 
-                         />
-                       </div>
-                     </div>
-                   ))}
-                 </div>
-               </CardContent>
-             </Card>
+                     ))}
+                   </div>
+                 </CardContent>
+               </Card>
+             )}
           </div>
 
           {/* 最昂贵的思考 & 思考深度 */}
@@ -349,7 +484,7 @@ export function AnnualReportPage() {
                   </p>
                 )}
                 <p className="mt-4 text-sm text-muted-foreground">
-                  为了让你满意，这次我可是下了血本！
+                  {getExpensiveThinkingMetaphor(data.brain_power.most_expensive_cost)}
                 </p>
               </CardContent>
             </Card>
@@ -393,28 +528,84 @@ export function AnnualReportPage() {
             <h2>个性与表达</h2>
           </div>
           
+          {/* 深夜回复 & 最喜欢的回复 */}
+          {(data.expression_vibe.late_night_reply || data.expression_vibe.favorite_reply) && (
+            <div className="grid gap-4 md:grid-cols-2">
+              {data.expression_vibe.late_night_reply && (
+                <Card className="bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-950/20 dark:to-violet-950/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="text-2xl">🌙</span>
+                      深夜还在回复
+                    </CardTitle>
+                    <CardDescription>凌晨 {data.expression_vibe.late_night_reply.time}，麦麦还在回复...</CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-lg italic text-muted-foreground">
+                      "{data.expression_vibe.late_night_reply.content}"
+                    </p>
+                    <p className="mt-4 text-sm text-muted-foreground">
+                      是有什么心事吗？
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {data.expression_vibe.favorite_reply && (
+                <Card className="bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <span className="text-2xl">💬</span>
+                      最喜欢的回复
+                    </CardTitle>
+                    <CardDescription>使用了 {data.expression_vibe.favorite_reply.count} 次</CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <p className="text-lg font-medium text-primary">
+                      "{data.expression_vibe.favorite_reply.content}"
+                    </p>
+                    <p className="mt-4 text-sm text-muted-foreground">
+                      {getFavoriteReplyMetaphor(data.expression_vibe.favorite_reply.count)}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+          
           <div className="grid gap-4 md:grid-cols-2">
+            {/* 使用最多的表情包 TOP3 */}
             <Card className="bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20">
               <CardHeader>
-                <CardTitle>表情包之王</CardTitle>
-                <CardDescription>年度使用次数最多的表情包</CardDescription>
+                <CardTitle>使用最多的表情包 TOP3</CardTitle>
+                <CardDescription>年度最爱的表情包们</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col items-center justify-center">
-                {data.expression_vibe.top_emoji ? (
-                  <>
-                    <div className="relative mb-4 h-48 w-48 overflow-hidden rounded-lg shadow-lg transition-transform hover:scale-105">
-                      <img 
-                        src={`/api/webui/emoji/${data.expression_vibe.top_emoji.id}/thumbnail?original=true`} 
-                        alt="Top Emoji" 
-                        className="h-full w-full object-cover"
-                      />
-                      <Badge className="absolute right-2 top-2 bg-yellow-500">NO.1</Badge>
-                    </div>
-                    <p className="text-center font-medium text-lg">"{data.expression_vibe.top_emoji.description}"</p>
-                    <p className="text-muted-foreground">使用了 {data.expression_vibe.top_emoji.usage_count} 次</p>
-                  </>
+              <CardContent>
+                {data.expression_vibe.top_emojis && data.expression_vibe.top_emojis.length > 0 ? (
+                  <div className="flex justify-center gap-4">
+                    {data.expression_vibe.top_emojis.slice(0, 3).map((emoji: { id: number; usage_count: number }, index: number) => (
+                      <div key={emoji.id} className="flex flex-col items-center">
+                        <div className="relative">
+                          <img 
+                            src={`/api/webui/emoji/${emoji.id}/thumbnail?original=true`} 
+                            alt={`TOP ${index + 1}`} 
+                            className="h-24 w-24 rounded-lg object-cover shadow-md transition-transform hover:scale-105"
+                          />
+                          <Badge 
+                            className={cn(
+                              "absolute -top-2 -right-2",
+                              index === 0 ? "bg-yellow-500" : index === 1 ? "bg-gray-400" : "bg-amber-700"
+                            )}
+                          >
+                            {index + 1}
+                          </Badge>
+                        </div>
+                        <p className="mt-2 text-sm text-muted-foreground">{emoji.usage_count} 次</p>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <div className="flex h-48 items-center justify-center text-muted-foreground">暂无数据</div>
+                  <div className="flex h-32 items-center justify-center text-muted-foreground">暂无数据</div>
                 )}
               </CardContent>
             </Card>
@@ -422,8 +613,8 @@ export function AnnualReportPage() {
             <div className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>百变麦麦</CardTitle>
-                  <CardDescription>最常使用的表达风格</CardDescription>
+                  <CardTitle>印象最深刻的表达风格</CardTitle>
+                  <CardDescription>麦麦最常使用的表达方式</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
@@ -447,13 +638,13 @@ export function AnnualReportPage() {
                 <StatCard
                   title="图片鉴赏"
                   value={`${data.expression_vibe.image_processed_count} 张`}
-                  description="我看过的图比你吃过的盐还多"
+                  description={getImageMetaphor(data.expression_vibe.image_processed_count)}
                   icon={<ImageIcon className="h-4 w-4" />}
                 />
                 <StatCard
                   title="成长的足迹"
                   value={`${data.expression_vibe.rejected_expression_count} 次`}
-                  description="被大家纠正表达的次数"
+                  description={getRejectedMetaphor(data.expression_vibe.rejected_expression_count)}
                   icon={<Zap className="h-4 w-4" />}
                 />
               </div>

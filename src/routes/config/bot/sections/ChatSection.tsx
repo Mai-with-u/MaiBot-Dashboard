@@ -344,6 +344,39 @@ export const ChatSection = React.memo(function ChatSection({ config, onChange }:
             </p>
           </div>
 
+          <div className="grid gap-2">
+            <Label htmlFor="plan_reply_log_max_per_chat">每个聊天流最大日志数量</Label>
+            <Input
+              id="plan_reply_log_max_per_chat"
+              type="number"
+              step="1"
+              min="100"
+              value={config.plan_reply_log_max_per_chat ?? 1024}
+              onChange={(e) =>
+                onChange({ ...config, plan_reply_log_max_per_chat: parseInt(e.target.value) })
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              每个聊天流保存的 Plan/Reply 日志最大数量，超过此数量时会自动删除最老的日志
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="llm_quote"
+              checked={config.llm_quote ?? false}
+              onCheckedChange={(checked) =>
+                onChange({ ...config, llm_quote: checked })
+              }
+            />
+            <Label htmlFor="llm_quote" className="cursor-pointer">
+              启用 LLM 控制引用
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground -mt-2 ml-10">
+            启用后，LLM 可以决定是否在回复时引用消息
+          </p>
+
           <div className="flex items-center space-x-2">
             <Switch
               id="enable_talk_value_rules"

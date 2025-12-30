@@ -14,7 +14,6 @@ export interface TimeFootprintData {
 
 export interface SocialNetworkData {
   total_groups: number
-  new_friends_count: number
   top_groups: Array<{
     group_id: string
     group_name: string
@@ -41,6 +40,10 @@ export interface BrainPowerData {
     count: number
     tokens: number
     cost: number
+  }>
+  top_reply_models: Array<{
+    model: string
+    count: number
   }>
   most_expensive_cost: number
   most_expensive_time: string | null
@@ -87,6 +90,14 @@ export interface ExpressionVibeData {
     count: number
   }>
   image_processed_count: number
+  late_night_reply: {
+    time: string
+    content: string
+  } | null
+  favorite_reply: {
+    content: string
+    count: number
+  } | null
 }
 
 export interface AchievementData {
