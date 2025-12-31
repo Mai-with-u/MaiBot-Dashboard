@@ -4,6 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/use-toast'
+import { toPng } from 'html-to-image'
 import {
   BarChart,
   Bar,
@@ -28,6 +31,8 @@ import {
   Heart,
   Image as ImageIcon,
   Bot,
+  Download,
+  Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -139,8 +144,10 @@ export function AnnualReportPage() {
   const [year] = useState(2025)
   const [data, setData] = useState<AnnualReportData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const reportRef = useRef<HTMLDivElement>(null)
+  const { toast } = useToast()
 
   const loadReport = useCallback(async () => {
     try {
@@ -154,6 +161,73 @@ export function AnnualReportPage() {
       setIsLoading(false)
     }
   }, [year])
+
+  // 导出为图片
+  const handleExport = useCallback(async () => {
+    if (!reportRef.current || !data) return
+    
+    setIsExporting(true)
+    toast({
+      title: '正在生成图片',
+      description: '请稍候...',
+    })
+    
+    try {
+      const element = reportRef.current
+      
+      // 获取当前主题的背景色
+      const computedStyle = getComputedStyle(document.documentElement)
+      const backgroundColor = computedStyle.getPropertyValue('--background').trim() 
+        ? `hsl(${computedStyle.getPropertyValue('--background').trim()})` 
+        : (document.documentElement.classList.contains('dark') ? '#0a0a0a' : '#ffffff')
+      
+      // 保存原始样式
+      const originalWidth = element.style.width
+      const originalMaxWidth = element.style.maxWidth
+      
+      // 临时设置固定宽度以去除左右空白
+      element.style.width = '1024px'
+      element.style.maxWidth = '1024px'
+      
+      const dataUrl = await toPng(element, {
+        quality: 1,
+        pixelRatio: 2,
+        backgroundColor,
+        cacheBust: true,
+        filter: (node) => {
+          // 过滤掉导出按钮
+          if (node instanceof HTMLElement && node.hasAttribute('data-export-btn')) {
+            return false
+          }
+          return true
+        },
+      })
+      
+      // 恢复原始样式
+      element.style.width = originalWidth
+      element.style.maxWidth = originalMaxWidth
+      
+      // 创建下载链接
+      const link = document.createElement('a')
+      link.download = `${data.bot_name}_${data.year}_年度总结.png`
+      link.href = dataUrl
+      link.click()
+      
+      toast({
+        title: '导出成功',
+        description: '年度报告已保存为图片',
+      })
+    } catch (err) {
+      console.error('导出图片失败:', err)
+      toast({
+        title: '导出失败',
+        description: '请重试',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }, [data, toast])
 
   useEffect(() => {
     loadReport()
@@ -175,10 +249,32 @@ export function AnnualReportPage() {
 
   return (
     <ScrollArea className="h-[calc(100vh-4rem)]">
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/50 p-4 md:p-8 print:p-0">
-        <div className="mx-auto max-w-5xl space-y-8 print:space-y-4" ref={reportRef}>
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/50 p-4 md:p-8 print:p-0" ref={reportRef}>
+        <div className="mx-auto max-w-5xl space-y-8 print:space-y-4">
           {/* 头部 Hero */}
           <header className="relative overflow-hidden rounded-3xl bg-primary p-8 text-primary-foreground shadow-2xl print:rounded-none print:shadow-none">
+            {/* 导出按钮 */}
+            <div className="absolute right-4 top-4 z-20 print:hidden" data-export-btn>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleExport}
+                disabled={isExporting}
+                className="gap-2 bg-white/20 hover:bg-white/30 text-white border-white/30"
+              >
+                {isExporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    导出中...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    保存图片
+                  </>
+                )}
+              </Button>
+            </div>
             <div className="relative z-10 flex flex-col items-center text-center">
               <Bot className="mb-4 h-16 w-16 animate-bounce" />
               <h1 className="text-4xl font-bold tracking-tighter sm:text-6xl">
