@@ -12,6 +12,7 @@ import {
   useContext,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
 } from 'react'
 import { restartMaiBot } from './system-api'
@@ -107,8 +108,8 @@ export function RestartProvider({
     maxAttempts,
   })
 
-  // 定时器引用
-  const [timers, setTimers] = useState<{
+  // 使用 useRef 存储定时器引用，避免闭包陷阱
+  const timersRef = useRef<{
     progress?: ReturnType<typeof setInterval>
     elapsed?: ReturnType<typeof setInterval>
     check?: ReturnType<typeof setTimeout>
@@ -116,11 +117,20 @@ export function RestartProvider({
 
   // 清理所有定时器
   const clearAllTimers = useCallback(() => {
-    if (timers.progress) clearInterval(timers.progress)
-    if (timers.elapsed) clearInterval(timers.elapsed)
-    if (timers.check) clearTimeout(timers.check)
-    setTimers({})
-  }, [timers])
+    const timers = timersRef.current
+    if (timers.progress) {
+      clearInterval(timers.progress)
+      timers.progress = undefined
+    }
+    if (timers.elapsed) {
+      clearInterval(timers.elapsed)
+      timers.elapsed = undefined
+    }
+    if (timers.check) {
+      clearTimeout(timers.check)
+      timers.check = undefined
+    }
+  }, [])
 
   // 重置状态
   const resetState = useCallback(() => {
@@ -203,7 +213,7 @@ export function RestartProvider({
       } else {
         // 继续检查
         const checkTimer = setTimeout(doCheck, CONFIG.CHECK_INTERVAL)
-        setTimers((prev) => ({ ...prev, check: checkTimer }))
+        timersRef.current.check = checkTimer
       }
     }
 
@@ -280,7 +290,8 @@ export function RestartProvider({
         }))
       }, 1000)
 
-      setTimers({ progress: progressTimer, elapsed: elapsedTimer })
+      timersRef.current.progress = progressTimer
+      timersRef.current.elapsed = elapsedTimer
 
       // 延迟后开始健康检查
       setTimeout(() => {

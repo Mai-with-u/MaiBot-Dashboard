@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import axios from 'axios'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -139,12 +139,32 @@ function IndexPageContent() {
   const [isReviewerOpen, setIsReviewerOpen] = useState(false)
   const [uncheckedCount, setUncheckedCount] = useState(0)
   const { triggerRestart, isRestarting } = useRestart()
+  
+  // 使用 ref 跟踪组件是否已卸载，防止内存泄漏
+  const isMountedRef = useRef(true)
+  // 使用 ref 存储 interval ID，方便清理
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // 组件卸载时清理
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+      // 清理自动刷新定时器
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current)
+        refreshIntervalRef.current = null
+      }
+    }
+  }, [])
 
   // 获取审核统计
   const fetchReviewStats = useCallback(async () => {
     try {
       const data = await getReviewStats()
-      setUncheckedCount(data.unchecked)
+      if (isMountedRef.current) {
+        setUncheckedCount(data.unchecked)
+      }
     } catch (error) {
       console.error('获取审核统计失败:', error)
     }
@@ -155,18 +175,24 @@ function IndexPageContent() {
     try {
       setHitokotoLoading(true)
       const response = await axios.get('https://v1.hitokoto.cn/?c=a&c=b&c=c&c=d&c=h&c=i&c=k')
-      setHitokoto({
-        hitokoto: response.data.hitokoto,
-        from: response.data.from || response.data.from_who || '未知'
-      })
+      if (isMountedRef.current) {
+        setHitokoto({
+          hitokoto: response.data.hitokoto,
+          from: response.data.from || response.data.from_who || '未知'
+        })
+      }
     } catch (error) {
       console.error('获取一言失败:', error)
-      setHitokoto({
-        hitokoto: '人生就像一盒巧克力，你永远不知道下一颗是什么味道。',
-        from: '阿甘正传'
-      })
+      if (isMountedRef.current) {
+        setHitokoto({
+          hitokoto: '人生就像一盒巧克力，你永远不知道下一颗是什么味道。',
+          from: '阿甘正传'
+        })
+      }
     } finally {
-      setHitokotoLoading(false)
+      if (isMountedRef.current) {
+        setHitokotoLoading(false)
+      }
     }
   }, [])
 
@@ -174,6 +200,7 @@ function IndexPageContent() {
   const fetchBotStatus = useCallback(async () => {
     try {
       const response = await fetchWithAuth('/api/webui/system/status')
+      if (!isMountedRef.current) return
       if (response.ok) {
         const data = await response.json()
         setBotStatus(data)
@@ -182,7 +209,9 @@ function IndexPageContent() {
       }
     } catch (error) {
       console.error('获取机器人状态失败:', error)
-      setBotStatus(null)
+      if (isMountedRef.current) {
+        setBotStatus(null)
+      }
     }
   }, [])
 
@@ -194,6 +223,7 @@ function IndexPageContent() {
   const fetchDashboardData = useCallback(async () => {
     try {
       const response = await fetchWithAuth(`/api/webui/statistics/dashboard?hours=${timeRange}`)
+      if (!isMountedRef.current) return
       if (response.ok) {
         const data = await response.json()
         setDashboardData(data)
@@ -202,8 +232,10 @@ function IndexPageContent() {
       setLoadingProgress(100)
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
-      setLoading(false)
-      setLoadingProgress(100)
+      if (isMountedRef.current) {
+        setLoading(false)
+        setLoadingProgress(100)
+      }
     }
   }, [timeRange])
 
@@ -248,14 +280,27 @@ function IndexPageContent() {
 
   // 自动刷新
   useEffect(() => {
+    // 清理旧的定时器
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current)
+      refreshIntervalRef.current = null
+    }
+    
     if (!autoRefresh) return
 
-    const interval = setInterval(() => {
-      fetchDashboardData()
-      fetchBotStatus()
+    refreshIntervalRef.current = setInterval(() => {
+      if (isMountedRef.current) {
+        fetchDashboardData()
+        fetchBotStatus()
+      }
     }, 30000) // 30秒刷新一次
 
-    return () => clearInterval(interval)
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current)
+        refreshIntervalRef.current = null
+      }
+    }
   }, [autoRefresh, fetchDashboardData, fetchBotStatus])
 
   if (loading || !dashboardData) {
