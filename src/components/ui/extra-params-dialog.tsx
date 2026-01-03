@@ -27,9 +27,10 @@ export function ExtraParamsDialog({
 }: ExtraParamsDialogProps) {
   const [editingValue, setEditingValue] = useState<Record<string, unknown>>(value)
 
-  // 当对话框打开时重置编辑值
+  // 当对话框打开状态改变时的处理
   const handleOpenChange = (newOpen: boolean) => {
     if (newOpen) {
+      // 打开时同步最新的 value
       setEditingValue(value)
     }
     onOpenChange(newOpen)
