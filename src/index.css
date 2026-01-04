@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* JetBrains Mono 字体 - 用于代码编辑器 */
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/JetBrainsMono-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

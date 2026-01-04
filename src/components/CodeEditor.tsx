@@ -60,6 +60,21 @@ export function CodeEditor({
   const extensions = [
     ...(languageExtensions[language] || []),
     EditorView.lineWrapping,
+    // 应用 JetBrains Mono 字体
+    EditorView.theme({
+      '&': {
+        fontFamily: '"JetBrains Mono", "Fira Code", "Consolas", "Monaco", monospace',
+      },
+      '.cm-content': {
+        fontFamily: '"JetBrains Mono", "Fira Code", "Consolas", "Monaco", monospace',
+      },
+      '.cm-gutters': {
+        fontFamily: '"JetBrains Mono", "Fira Code", "Consolas", "Monaco", monospace',
+      },
+      '.cm-scroller': {
+        fontFamily: '"JetBrains Mono", "Fira Code", "Consolas", "Monaco", monospace',
+      },
+    }),
   ]
 
   if (readOnly) {
@@ -67,7 +82,7 @@ export function CodeEditor({
   }
 
   return (
-    <div className={`rounded-md overflow-hidden border ${className}`}>
+    <div className={`rounded-md overflow-hidden border custom-scrollbar ${className}`}>
       <CodeMirror
         value={value}
         height={height}

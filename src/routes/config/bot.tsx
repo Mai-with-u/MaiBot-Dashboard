@@ -131,9 +131,13 @@ function BotConfigPageContent() {
     // 翻译第一行（主要错误信息）
     let firstLine = lines[0]
     
+    // 移除 "Error: " 前缀（如果有）
+    firstLine = firstLine.replace(/^Error:\s*/, '')
+    
     // 常见 TOML 错误模式匹配和翻译
     const translations: Array<[RegExp, string | ((match: RegExpMatchArray) => string)]> = [
       // Invalid TOML document 系列
+      [/Invalid TOML document: unrecognized escape sequence/, 'TOML 文档错误：无法识别的转义序列（提示：在双引号字符串中使用 \\\\ 转义反斜杠，或使用单引号字符串）'],
       [/Invalid TOML document: only letter, numbers, dashes and underscores are allowed in keys/, 'TOML 文档错误：键名只能包含字母、数字、短横线和下划线'],
       [/Invalid TOML document: (.+)/, 'TOML 文档错误：$1'],
       
@@ -143,7 +147,7 @@ function BotConfigPageContent() {
       [/Invalid.*at line (\d+), column (\d+)/, '第 $1 行第 $2 列：无效的语法'],
       [/Unterminated string at line (\d+)/, '第 $1 行：字符串未正常结束（缺少引号）'],
       [/Duplicate key.*at line (\d+)/, '第 $1 行：重复的键名'],
-      [/Invalid escape sequence at line (\d+)/, '第 $1 行：无效的转义序列'],
+      [/Invalid escape sequence at line (\d+)/, '第 $1 行：无效的转义序列（提示：在双引号字符串中使用 \\\\ 转义反斜杠）'],
       [/Expected.*but got.*at line (\d+)/, '第 $1 行：类型不匹配'],
       [/line (\d+), column (\d+)/, '第 $1 行第 $2 列'],
       
@@ -154,6 +158,7 @@ function BotConfigPageContent() {
       [/Invalid date/, '无效的日期格式'],
       [/Invalid boolean/, '无效的布尔值（应为 true 或 false）'],
       [/Unexpected character/, '意外的字符'],
+      [/unrecognized escape sequence/, '无法识别的转义序列'],
     ]
 
     // 尝试翻译第一行
