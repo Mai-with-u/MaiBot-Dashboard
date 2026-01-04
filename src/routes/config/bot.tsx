@@ -12,6 +12,7 @@ import {
   FeaturesSection,
   ExpressionSection,
   ProcessingSection,
+  MessageReceiveSection,
   WebUISection,
 } from './bot/sections'
 import {
@@ -34,6 +35,7 @@ import { Info } from 'lucide-react'
 import { RestartOverlay } from '@/components/restart-overlay'
 import { RestartProvider, useRestart } from '@/lib/restart-context'
 import { CodeEditor } from '@/components'
+import { parse as parseToml } from 'smol-toml'
 
 // 导入模块化的类型定义
 import type {
@@ -45,6 +47,7 @@ import type {
   MemoryConfig,
   ToolConfig,
   VoiceConfig,
+  MessageReceiveConfig,
   DreamConfig,
   LPMMKnowledgeConfig,
   KeywordReactionConfig,
@@ -86,6 +89,7 @@ function BotConfigPageContent() {
   const [editMode, setEditMode] = useState<'visual' | 'source'>('visual')
   const [sourceCode, setSourceCode] = useState<string>('')
   const [hasTomlError, setHasTomlError] = useState(false)
+  const [tomlErrorMessage, setTomlErrorMessage] = useState<string>('')
   const { toast } = useToast()
   const { triggerRestart, isRestarting } = useRestart()
 
@@ -98,6 +102,7 @@ function BotConfigPageContent() {
   const [memoryConfig, setMemoryConfig] = useState<MemoryConfig | null>(null)
   const [toolConfig, setToolConfig] = useState<ToolConfig | null>(null)
   const [voiceConfig, setVoiceConfig] = useState<VoiceConfig | null>(null)
+  const [messageReceiveConfig, setMessageReceiveConfig] = useState<MessageReceiveConfig | null>(null)
   const [dreamConfig, setDreamConfig] = useState<DreamConfig | null>(null)
   const [lpmmConfig, setLpmmConfig] = useState<LPMMKnowledgeConfig | null>(null)
   const [keywordReactionConfig, setKeywordReactionConfig] = useState<KeywordReactionConfig | null>(null)
@@ -115,6 +120,58 @@ function BotConfigPageContent() {
   const configRef = useRef<Record<string, unknown>>({})
 
   // ==================== 辅助函数 ====================
+  
+  /**
+   * 翻译 TOML 错误信息为中文
+   */
+  const translateTomlError = (errorMessage: string): string => {
+    // 分行处理，保留多行格式
+    const lines = errorMessage.split('\n')
+    
+    // 翻译第一行（主要错误信息）
+    let firstLine = lines[0]
+    
+    // 常见 TOML 错误模式匹配和翻译
+    const translations: Array<[RegExp, string | ((match: RegExpMatchArray) => string)]> = [
+      // Invalid TOML document 系列
+      [/Invalid TOML document: only letter, numbers, dashes and underscores are allowed in keys/, 'TOML 文档错误：键名只能包含字母、数字、短横线和下划线'],
+      [/Invalid TOML document: (.+)/, 'TOML 文档错误：$1'],
+      
+      // 位置错误系列
+      [/Unexpected character.*at line (\d+), column (\d+)/, '第 $1 行第 $2 列：意外的字符'],
+      [/Expected.*at line (\d+), column (\d+)/, '第 $1 行第 $2 列：缺少必要的字符'],
+      [/Invalid.*at line (\d+), column (\d+)/, '第 $1 行第 $2 列：无效的语法'],
+      [/Unterminated string at line (\d+)/, '第 $1 行：字符串未正常结束（缺少引号）'],
+      [/Duplicate key.*at line (\d+)/, '第 $1 行：重复的键名'],
+      [/Invalid escape sequence at line (\d+)/, '第 $1 行：无效的转义序列'],
+      [/Expected.*but got.*at line (\d+)/, '第 $1 行：类型不匹配'],
+      [/line (\d+), column (\d+)/, '第 $1 行第 $2 列'],
+      
+      // 通用错误系列
+      [/Unexpected end of input/, '意外的文件结束（可能缺少闭合符号）'],
+      [/Unexpected token/, '意外的标记'],
+      [/Invalid number/, '无效的数字'],
+      [/Invalid date/, '无效的日期格式'],
+      [/Invalid boolean/, '无效的布尔值（应为 true 或 false）'],
+      [/Unexpected character/, '意外的字符'],
+    ]
+
+    // 尝试翻译第一行
+    for (const [pattern, replacement] of translations) {
+      if (pattern.test(firstLine)) {
+        firstLine = firstLine.replace(pattern, replacement as string)
+        break
+      }
+    }
+
+    // 重组多行错误信息
+    if (lines.length > 1) {
+      lines[0] = firstLine
+      return lines.join('\n')
+    }
+
+    return firstLine
+  }
   
   /**
    * 解析并设置所有配置状态
@@ -138,6 +195,7 @@ function BotConfigPageContent() {
     setMemoryConfig(config.memory as MemoryConfig)
     setToolConfig(config.tool as ToolConfig)
     setVoiceConfig(config.voice as VoiceConfig)
+    setMessageReceiveConfig(config.message_receive as MessageReceiveConfig)
     setDreamConfig(config.dream as DreamConfig)
     setLpmmConfig(config.lpmm_knowledge as LPMMKnowledgeConfig)
     setKeywordReactionConfig(config.keyword_reaction as KeywordReactionConfig)
@@ -166,6 +224,7 @@ function BotConfigPageContent() {
       memory: memoryConfig,
       tool: toolConfig,
       voice: voiceConfig,
+      message_receive: messageReceiveConfig,
       dream: dreamConfig,
       lpmm_knowledge: lpmmConfig,
       keyword_reaction: keywordReactionConfig,
@@ -181,7 +240,7 @@ function BotConfigPageContent() {
   }, [
     botConfig, personalityConfig, chatConfig, expressionConfig,
     emojiConfig, memoryConfig, toolConfig,
-    voiceConfig, dreamConfig, lpmmConfig, keywordReactionConfig, responsePostProcessConfig,
+    voiceConfig, messageReceiveConfig, dreamConfig, lpmmConfig, keywordReactionConfig, responsePostProcessConfig,
     chineseTypoConfig, responseSplitterConfig, logConfig, debugConfig,
     maimMessageConfig, telemetryConfig, webuiConfig
   ])
@@ -273,6 +332,24 @@ function BotConfigPageContent() {
   const saveSourceCode = async () => {
     try {
       setSaving(true)
+      
+      // 前端验证 TOML 格式
+      try {
+        parseToml(sourceCode)
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'TOML 格式错误'
+        const translatedMsg = translateTomlError(errorMsg)
+        setHasTomlError(true)
+        setTomlErrorMessage(translatedMsg)
+        toast({
+          variant: 'destructive',
+          title: 'TOML 格式错误',
+          description: translatedMsg,
+        })
+        setSaving(false)
+        return
+      }
+      
       // 将双引号字符串中的实际字符转换回 TOML 转义序列
       // 使用正则表达式只处理双引号字符串内的内容，不影响单引号字符串
       const escaped = sourceCode.replace(/"([^"]*)"/g, (_match, content) => {
@@ -287,6 +364,7 @@ function BotConfigPageContent() {
       await updateBotConfigRaw(escaped)
       setHasUnsavedChanges(false)
       setHasTomlError(false)
+      setTomlErrorMessage('')
       toast({
         title: '保存成功',
         description: '配置已保存',
@@ -295,10 +373,12 @@ function BotConfigPageContent() {
       await loadConfig()
     } catch (error) {
       setHasTomlError(true)
+      const errorMsg = error instanceof Error ? error.message : '保存配置失败'
+      setTomlErrorMessage(errorMsg)
       toast({
         variant: 'destructive',
         title: '保存失败',
-        description: error instanceof Error ? error.message : '保存配置失败',
+        description: errorMsg,
       })
     } finally {
       setSaving(false)
@@ -499,9 +579,14 @@ function BotConfigPageContent() {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                <strong>源代码模式（高级功能）：</strong>直接编辑 TOML 配置文件。此功能仅适用于熟悉 TOML 语法的高级用户。保存时会在后端验证格式，只有格式完全正确才能保存。
-                {hasTomlError && (
-                  <span className="text-destructive font-semibold ml-2">⚠️ 上次保存失败，请检查 TOML 格式</span>
+                <strong>源代码模式（高级功能）：</strong>直接编辑 TOML 配置文件。此功能仅适用于熟悉 TOML 语法的高级用户。保存时会在前端验证格式，只有格式完全正确才能保存。
+                {hasTomlError && tomlErrorMessage && (
+                  <div className="text-destructive font-semibold mt-3 p-3 bg-destructive/10 rounded-md">
+                    <div className="font-bold mb-2">⚠️ TOML 格式错误：</div>
+                    <pre className="text-sm font-mono whitespace-pre-wrap break-words">
+                      {tomlErrorMessage}
+                    </pre>
+                  </div>
                 )}
               </AlertDescription>
             </Alert>
@@ -514,6 +599,7 @@ function BotConfigPageContent() {
                 // 清除之前的错误状态
                 if (hasTomlError) {
                   setHasTomlError(false)
+                  setTomlErrorMessage('')
                 }
               }}
               language="toml"
@@ -594,6 +680,12 @@ function BotConfigPageContent() {
               onResponsePostProcessChange={setResponsePostProcessConfig}
               onChineseTypoChange={setChineseTypoConfig}
               onResponseSplitterChange={setResponseSplitterConfig}
+            />
+          )}
+          {messageReceiveConfig && (
+            <MessageReceiveSection
+              config={messageReceiveConfig}
+              onChange={setMessageReceiveConfig}
             />
           )}
         </TabsContent>

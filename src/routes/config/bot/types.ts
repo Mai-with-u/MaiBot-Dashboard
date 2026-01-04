@@ -80,6 +80,11 @@ export interface VoiceConfig {
   enable_asr: boolean
 }
 
+export interface MessageReceiveConfig {
+  ban_words: string[]
+  ban_msgs_regex: string[]
+}
+
 export interface DreamConfig {
   interval_minutes: number
   max_iterations: number
@@ -201,6 +206,7 @@ export interface AllBotConfigs {
   memoryConfig: MemoryConfig | null
   toolConfig: ToolConfig | null
   voiceConfig: VoiceConfig | null
+  messageReceiveConfig: MessageReceiveConfig | null
   dreamConfig: DreamConfig | null
   lpmmConfig: LPMMKnowledgeConfig | null
   keywordReactionConfig: KeywordReactionConfig | null
@@ -225,6 +231,7 @@ export type ConfigSectionName =
   | 'memory'
   | 'tool'
   | 'voice'
+  | 'message_receive'
   | 'dream'
   | 'lpmm_knowledge'
   | 'keyword_reaction'
