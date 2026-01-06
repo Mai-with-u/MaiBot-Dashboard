@@ -7,6 +7,7 @@ import {
   LPMMSection,
   LogSection,
   DebugSection,
+  ExperimentalSection,
   MaimMessageSection,
   TelemetrySection,
   FeaturesSection,
@@ -56,6 +57,7 @@ import type {
   ResponseSplitterConfig,
   LogConfig,
   DebugConfig,
+  ExperimentalConfig,
   MaimMessageConfig,
   TelemetryConfig,
   WebUIConfig,
@@ -111,6 +113,7 @@ function BotConfigPageContent() {
   const [responseSplitterConfig, setResponseSplitterConfig] = useState<ResponseSplitterConfig | null>(null)
   const [logConfig, setLogConfig] = useState<LogConfig | null>(null)
   const [debugConfig, setDebugConfig] = useState<DebugConfig | null>(null)
+  const [experimentalConfig, setExperimentalConfig] = useState<ExperimentalConfig | null>(null)
   const [maimMessageConfig, setMaimMessageConfig] = useState<MaimMessageConfig | null>(null)
   const [telemetryConfig, setTelemetryConfig] = useState<TelemetryConfig | null>(null)
   const [webuiConfig, setWebuiConfig] = useState<WebUIConfig | null>(null)
@@ -209,6 +212,7 @@ function BotConfigPageContent() {
     setResponseSplitterConfig(config.response_splitter as ResponseSplitterConfig)
     setLogConfig(config.log as LogConfig)
     setDebugConfig(config.debug as DebugConfig)
+    setExperimentalConfig(config.experimental as ExperimentalConfig)
     setMaimMessageConfig(config.maim_message as MaimMessageConfig)
     setTelemetryConfig(config.telemetry as TelemetryConfig)
     setWebuiConfig(config.webui as WebUIConfig)
@@ -238,6 +242,7 @@ function BotConfigPageContent() {
       response_splitter: responseSplitterConfig,
       log: logConfig,
       debug: debugConfig,
+      experimental: experimentalConfig,
       maim_message: maimMessageConfig,
       telemetry: telemetryConfig,
       webui: webuiConfig,
@@ -246,7 +251,7 @@ function BotConfigPageContent() {
     botConfig, personalityConfig, chatConfig, expressionConfig,
     emojiConfig, memoryConfig, toolConfig,
     voiceConfig, messageReceiveConfig, dreamConfig, lpmmConfig, keywordReactionConfig, responsePostProcessConfig,
-    chineseTypoConfig, responseSplitterConfig, logConfig, debugConfig,
+    chineseTypoConfig, responseSplitterConfig, logConfig, debugConfig, experimentalConfig,
     maimMessageConfig, telemetryConfig, webuiConfig
   ])
 
@@ -714,6 +719,7 @@ function BotConfigPageContent() {
         <TabsContent value="other" className="space-y-4">
           {logConfig && <LogSection config={logConfig} onChange={setLogConfig} />}
           {debugConfig && <DebugSection config={debugConfig} onChange={setDebugConfig} />}
+          {experimentalConfig && <ExperimentalSection config={experimentalConfig} onChange={setExperimentalConfig} />}
           {maimMessageConfig && <MaimMessageSection config={maimMessageConfig} onChange={setMaimMessageConfig} />}
           {telemetryConfig && <TelemetrySection config={telemetryConfig} onChange={setTelemetryConfig} />}
         </TabsContent>

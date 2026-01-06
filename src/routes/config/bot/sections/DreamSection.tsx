@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { X } from 'lucide-react'
 import type { DreamConfig } from '../types'
@@ -192,6 +193,22 @@ export const DreamSection = React.memo(function DreamSection({ config, onChange 
             <p className="text-sm text-muted-foreground">当前配置为全天允许做梦</p>
           )}
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="dream_visible"
+            checked={config.dream_visible}
+            onCheckedChange={(checked) => onChange({ ...config, dream_visible: checked })}
+          />
+          <Label htmlFor="dream_visible" className="cursor-pointer">
+            梦境结果存储到上下文
+          </Label>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          开启后，梦境发送给配置的用户后，也会存储到聊天上下文中，在后续对话中可见
+        </p>
       </div>
     </div>
   )

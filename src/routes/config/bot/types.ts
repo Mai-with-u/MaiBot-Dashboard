@@ -16,7 +16,6 @@ export interface PersonalityConfig {
   interest: string
   plan_style: string
   visual_style: string
-  private_plan_style: string
   states: string[]
   state_probability: number
 }
@@ -91,6 +90,7 @@ export interface DreamConfig {
   first_delay_seconds: number
   dream_send: string
   dream_time_ranges: string[]
+  dream_visible: boolean
 }
 
 export interface LPMMKnowledgeConfig {
@@ -165,6 +165,11 @@ export interface DebugConfig {
   show_lpmm_paragraph: boolean
 }
 
+export interface ExperimentalConfig {
+  private_plan_style: string
+  chat_prompts: string[]
+}
+
 export interface MaimMessageConfig {
   auth_token: string[]
   enable_api_server: boolean
@@ -215,6 +220,7 @@ export interface AllBotConfigs {
   responseSplitterConfig: ResponseSplitterConfig | null
   logConfig: LogConfig | null
   debugConfig: DebugConfig | null
+  experimentalConfig: ExperimentalConfig | null
   maimMessageConfig: MaimMessageConfig | null
   telemetryConfig: TelemetryConfig | null
 }
@@ -240,6 +246,7 @@ export type ConfigSectionName =
   | 'response_splitter'
   | 'log'
   | 'debug'
+  | 'experimental'
   | 'maim_message'
   | 'telemetry'
   | 'webui'

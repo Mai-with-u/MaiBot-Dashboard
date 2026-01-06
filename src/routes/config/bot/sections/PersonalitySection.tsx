@@ -157,17 +157,6 @@ export const PersonalitySection = React.memo(function PersonalitySection({ confi
               rows={3}
             />
           </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="private_plan_style">私聊规则</Label>
-            <Textarea
-              id="private_plan_style"
-              value={config.private_plan_style}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange({ ...config, private_plan_style: e.target.value })}
-              placeholder="私聊的说话规则和行为风格"
-              rows={4}
-            />
-          </div>
         </div>
       </div>
     </div>
