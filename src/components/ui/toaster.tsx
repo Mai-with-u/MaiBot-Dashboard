@@ -7,12 +7,14 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
+import { useIsMobile } from "@/hooks/use-media-query"
 
 export function Toaster() {
   const { toasts } = useToast()
+  const isMobile = useIsMobile()
 
   return (
-    <ToastProvider>
+    <ToastProvider swipeDirection={isMobile ? "up" : "right"}>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
           <Toast key={id} {...props}>

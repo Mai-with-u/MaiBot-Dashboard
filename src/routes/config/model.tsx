@@ -46,10 +46,11 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Pencil, Trash2, Save, Search, Info, Power, Check, ChevronsUpDown, RefreshCw, Loader2, GraduationCap, Share2, AlertTriangle, Settings } from 'lucide-react'
+import { Plus, Pencil, Trash2, Save, Search, Info, Power, Check, ChevronsUpDown, RefreshCw, Loader2, GraduationCap, Share2, AlertTriangle, Settings, Lock, Unlock } from 'lucide-react'
 import { getModelConfig, updateModelConfig } from '@/lib/config-api'
 import { useToast } from '@/hooks/use-toast'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { HelpTooltip } from '@/components/ui/help-tooltip'
 import { RestartOverlay } from '@/components/restart-overlay'
 import { RestartProvider, useRestart } from '@/lib/restart-context'
 import { ExtraParamsDialog } from '@/components/ui/extra-params-dialog'
@@ -92,6 +93,8 @@ function ModelConfigPageContent() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [jumpToPage, setJumpToPage] = useState('')
+  
+  const [advancedTemperatureMode, setAdvancedTemperatureMode] = useState(false)
   
   // 模型 Combobox 状态
   const [modelComboboxOpen, setModelComboboxOpen] = useState(false)
@@ -1308,7 +1311,25 @@ function ModelConfigPageContent() {
             <div className="rounded-lg border p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="enable_model_temperature" className="cursor-pointer">自定义模型温度</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="enable_model_temperature" className="cursor-pointer">自定义模型温度</Label>
+                    <HelpTooltip
+                      content={
+                        <div className="space-y-2">
+                          <p className="font-medium">什么是温度（Temperature）？</p>
+                          <p>温度控制模型输出的随机性和创造性：</p>
+                          <ul className="list-disc list-inside space-y-1 text-xs">
+                            <li><strong>低温度（0.1-0.3）</strong>：更确定、更保守的输出，适合事实性任务</li>
+                            <li><strong>中温度（0.5-0.7）</strong>：平衡创造性与可控性</li>
+                            <li><strong>高温度（0.8-1.0）</strong>：更有创意、更多样化的输出</li>
+                            <li><strong>极高温度（1.0-2.0）</strong>：极度随机，可能产生不可预测的结果</li>
+                          </ul>
+                        </div>
+                      }
+                      side="right"
+                      maxWidth="400px"
+                    />
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     启用后将覆盖「为模型分配功能」中的任务温度配置
                   </p>
@@ -1318,10 +1339,8 @@ function ModelConfigPageContent() {
                   checked={editingModel?.temperature != null}
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      // 启用时设置默认值 0.5
                       setEditingModel((prev) => prev ? { ...prev, temperature: 0.5 } : null)
                     } else {
-                      // 禁用时清除温度
                       setEditingModel((prev) => prev ? { ...prev, temperature: null } : null)
                     }
                   }}
@@ -1329,13 +1348,49 @@ function ModelConfigPageContent() {
               </div>
               
               {editingModel?.temperature != null && (
-                <div className="space-y-2 pt-2 border-t">
-                  <div className="flex items-center justify-between">
+                <div className="space-y-3 pt-2 border-t">
+                  <div className="flex items-center justify-between gap-3">
                     <Label className="text-sm">温度值</Label>
-                    <span className="text-sm font-medium tabular-nums">{editingModel.temperature.toFixed(1)}</span>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={editingModel.temperature}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value)
+                          if (!isNaN(value) && value >= 0 && value <= 2) {
+                            setEditingModel((prev) => prev ? { ...prev, temperature: value } : null)
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = parseFloat(e.target.value)
+                          if (isNaN(value) || value < 0) {
+                            setEditingModel((prev) => prev ? { ...prev, temperature: 0 } : null)
+                          } else if (value > 2) {
+                            setEditingModel((prev) => prev ? { ...prev, temperature: 2 } : null)
+                          }
+                        }}
+                        step={0.01}
+                        min={0}
+                        max={2}
+                        className="w-20 h-8 text-sm text-right tabular-nums"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAdvancedTemperatureMode(!advancedTemperatureMode)}
+                        className="h-8 px-2"
+                        title={advancedTemperatureMode ? "切换到基础模式 (0-1)" : "解锁高级范围 (0-2)"}
+                      >
+                        {advancedTemperatureMode ? (
+                          <Unlock className="h-4 w-4" />
+                        ) : (
+                          <Lock className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground">0</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">0</span>
                     <Slider
                       value={[editingModel.temperature]}
                       onValueChange={(values) =>
@@ -1344,14 +1399,25 @@ function ModelConfigPageContent() {
                         )
                       }
                       min={0}
-                      max={1}
-                      step={0.1}
+                      max={advancedTemperatureMode ? 2 : 1}
+                      step={advancedTemperatureMode ? 0.05 : 0.1}
                       className="flex-1"
                     />
-                    <span className="text-xs text-muted-foreground">1</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">{advancedTemperatureMode ? '2' : '1'}</span>
                   </div>
+                  {advancedTemperatureMode && (
+                    <Alert className="bg-amber-500/10 border-amber-500/20 [&>svg+div]:translate-y-0">
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      <AlertDescription className="text-xs text-amber-600 dark:text-amber-400">
+                        高级模式：温度 &gt; 1 会产生更随机、更不可预测的输出，请谨慎使用
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   <p className="text-xs text-muted-foreground">
-                    较低的温度（0.1-0.3）产生更确定的输出，较高的温度（0.7-1.0）产生更多样化的输出
+                    {advancedTemperatureMode 
+                      ? "较低（0.1-0.5）产生确定输出，中等（0.5-1.0）平衡创造性，较高（1.0-2.0）产生极度随机输出"
+                      : "较低的温度（0.1-0.3）产生更确定的输出，较高的温度（0.7-1.0）产生更多样化的输出"
+                    }
                   </p>
                 </div>
               )}
@@ -1361,7 +1427,24 @@ function ModelConfigPageContent() {
             <div className="rounded-lg border p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="enable_model_max_tokens" className="cursor-pointer">自定义最大 Token</Label>
+                  <div className="flex items-center gap-1.5">
+                    <Label htmlFor="enable_model_max_tokens" className="cursor-pointer">自定义最大 Token</Label>
+                    <HelpTooltip
+                      content={
+                        <div className="space-y-2">
+                          <p className="font-medium">什么是最大 Token？</p>
+                          <p>控制模型单次回复的最大长度。1 token ≈ 0.75 个英文单词或 0.5 个中文字符。</p>
+                          <ul className="list-disc list-inside space-y-1 text-xs">
+                            <li><strong>较小值（512-1024）</strong>：简短回复，节省成本</li>
+                            <li><strong>中等值（2048-4096）</strong>：正常对话长度</li>
+                            <li><strong>较大值（8192+）</strong>：长文本生成，成本较高</li>
+                          </ul>
+                        </div>
+                      }
+                      side="right"
+                      maxWidth="400px"
+                    />
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     启用后将覆盖「为模型分配功能」中的任务最大 Token 配置
                   </p>

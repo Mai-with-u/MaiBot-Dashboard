@@ -57,6 +57,7 @@ import { Plus, Pencil, Trash2, Save, Eye, EyeOff, Copy, Search, Info, Power, Che
 import { getModelConfig, updateModelConfig, updateModelConfigSection, testProviderConnection, type TestConnectionResult } from '@/lib/config-api'
 import { useToast } from '@/hooks/use-toast'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { HelpTooltip } from '@/components/ui/help-tooltip'
 import { useTour } from '@/components/tour'
 import { MODEL_ASSIGNMENT_TOUR_ID, modelAssignmentTourSteps, STEP_ROUTE_MAP } from '@/components/tour/tours/model-assignment-tour'
 import { useNavigate } from '@tanstack/react-router'
@@ -1347,7 +1348,23 @@ function ModelProviderConfigPageContent() {
             </div>
 
             <div className="grid gap-2" data-tour="provider-name-input">
-              <Label htmlFor="name" className={formErrors.name ? 'text-destructive' : ''}>名称 *</Label>
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="name" className={formErrors.name ? 'text-destructive' : ''}>名称 *</Label>
+                <HelpTooltip
+                  content={
+                    <div className="space-y-2">
+                      <p className="font-medium">提供商名称</p>
+                      <p>为这个 API 提供商设置一个便于识别的名称，用于在模型配置中引用。</p>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                        <li>推荐使用厂商官方名称，如 DeepSeek、OpenAI</li>
+                        <li>名称需要唯一，不能与现有提供商重复</li>
+                      </ul>
+                    </div>
+                  }
+                  side="right"
+                  maxWidth="350px"
+                />
+              </div>
               <Input
                 id="name"
                 value={editingProvider?.name || ''}
@@ -1368,7 +1385,25 @@ function ModelProviderConfigPageContent() {
             </div>
 
             <div className="grid gap-2" data-tour="provider-url-input">
-              <Label htmlFor="base_url" className={formErrors.base_url ? 'text-destructive' : ''}>基础 URL *</Label>
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="base_url" className={formErrors.base_url ? 'text-destructive' : ''}>基础 URL *</Label>
+                <HelpTooltip
+                  content={
+                    <div className="space-y-2">
+                      <p className="font-medium">API 基础地址</p>
+                      <p>提供商的 API 端点基础 URL，通常以 /v1 结尾。</p>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                        <li><strong>OpenAI 格式：</strong>https://api.openai.com/v1</li>
+                        <li><strong>DeepSeek：</strong>https://api.deepseek.com</li>
+                        <li><strong>硅基流动：</strong>https://api.siliconflow.cn/v1</li>
+                        <li>选择模板会自动填充正确的 URL</li>
+                      </ul>
+                    </div>
+                  }
+                  side="right"
+                  maxWidth="400px"
+                />
+              </div>
               <Input
                 id="base_url"
                 value={editingProvider?.base_url || ''}
@@ -1395,7 +1430,25 @@ function ModelProviderConfigPageContent() {
             </div>
 
             <div className="grid gap-2" data-tour="provider-apikey-input">
-              <Label htmlFor="api_key" className={formErrors.api_key ? 'text-destructive' : ''}>API Key *</Label>
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="api_key" className={formErrors.api_key ? 'text-destructive' : ''}>API Key *</Label>
+                <HelpTooltip
+                  content={
+                    <div className="space-y-2">
+                      <p className="font-medium">API 密钥</p>
+                      <p>从提供商平台获取的身份验证密钥。</p>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                        <li>通常以 <code>sk-</code> 开头</li>
+                        <li>请妥善保管，不要泄露给他人</li>
+                        <li>可以点击眼睛图标切换显示/隐藏</li>
+                        <li>点击复制图标可快速复制密钥</li>
+                      </ul>
+                    </div>
+                  }
+                  side="right"
+                  maxWidth="350px"
+                />
+              </div>
               <div className="flex gap-2">
                 <Input
                   id="api_key"
@@ -1441,7 +1494,24 @@ function ModelProviderConfigPageContent() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="client_type">客户端类型</Label>
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="client_type">客户端类型</Label>
+                <HelpTooltip
+                  content={
+                    <div className="space-y-2">
+                      <p className="font-medium">API 客户端类型</p>
+                      <p>指定与提供商通信时使用的 API 协议格式。</p>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                        <li><strong>OpenAI：</strong>兼容 OpenAI API 格式的提供商</li>
+                        <li><strong>Gemini：</strong>Google Gemini 专用格式</li>
+                        <li>大部分第三方提供商都兼容 OpenAI 格式</li>
+                      </ul>
+                    </div>
+                  }
+                  side="right"
+                  maxWidth="350px"
+                />
+              </div>
               <Select
                 value={editingProvider?.client_type || 'openai'}
                 onValueChange={(value) =>
@@ -1468,7 +1538,14 @@ function ModelProviderConfigPageContent() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="max_retry">最大重试</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="max_retry">最大重试</Label>
+                  <HelpTooltip
+                    content="API 请求失败时的最大重试次数。设置为 0 表示不重试。默认值：2"
+                    side="top"
+                    maxWidth="250px"
+                  />
+                </div>
                 <Input
                   id="max_retry"
                   type="number"
@@ -1485,7 +1562,14 @@ function ModelProviderConfigPageContent() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="timeout">超时(秒)</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="timeout">超时(秒)</Label>
+                  <HelpTooltip
+                    content="单次 API 请求的超时时间（秒）。超时后会触发重试或报错。默认值：30 秒"
+                    side="top"
+                    maxWidth="250px"
+                  />
+                </div>
                 <Input
                   id="timeout"
                   type="number"
@@ -1502,7 +1586,14 @@ function ModelProviderConfigPageContent() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="retry_interval">重试间隔(秒)</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="retry_interval">重试间隔(秒)</Label>
+                  <HelpTooltip
+                    content="两次重试之间的等待时间（秒）。适当的间隔可以避免触发 API 限流。默认值：10 秒"
+                    side="top"
+                    maxWidth="250px"
+                  />
+                </div>
                 <Input
                   id="retry_interval"
                   type="number"
