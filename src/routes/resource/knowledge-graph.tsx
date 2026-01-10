@@ -596,7 +596,7 @@ export function KnowledgeGraphPage() {
 
               <div>
                 <label className="text-sm font-medium text-muted-foreground">内容</label>
-                <ScrollArea className="mt-1 h-40 p-3 bg-muted rounded">
+                <ScrollArea className="mt-1 max-h-[400px] p-3 bg-muted rounded border">
                   <p className="text-sm whitespace-pre-wrap">{selectedNodeData.content}</p>
                 </ScrollArea>
               </div>
