@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Info, Upload, Download, FileText, Trash2, FolderOpen, Save, RefreshCw, AlertCircle, Package, ChevronDown } from 'lucide-react'
+import { Info, Upload, Download, FileText, Trash2, FolderOpen, Save, RefreshCw, Package, ChevronDown } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
@@ -397,14 +397,6 @@ export function AdapterConfigPage() {
           </div>
         </div>
 
-        {/* 提示信息 */}
-        <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400">
-          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <p className="text-sm">
-            适配器配置保存之后使用 WebUI 的重启功能适配器并不会重启，需要手动重启适配器。
-          </p>
-        </div>
-
         {/* 模式选择 */}
         <Collapsible open={isModeConfigOpen} onOpenChange={setIsModeConfigOpen}>
         <Card>
@@ -716,7 +708,7 @@ export function AdapterConfigPage() {
                   <span className="sm:hidden">聊天</span>
                 </TabsTrigger>
                 <TabsTrigger value="voice" className="flex-shrink-0 text-xs sm:text-sm whitespace-nowrap">
-                  <span className="hidden sm:inline">语音设置</span>
+                  <span className="hidden sm:inline">语音与转发</span>
                   <span className="sm:hidden">语音</span>
                 </TabsTrigger>
                 <TabsTrigger value="debug" className="flex-shrink-0 text-xs sm:text-sm whitespace-nowrap">调试</TabsTrigger>
@@ -1250,7 +1242,7 @@ function ChatControlSection({
   )
 }
 
-// 语音配置组件
+// 语音和转发消息配置组件
 function VoiceSection({
   config,
   onChange,
@@ -1260,6 +1252,7 @@ function VoiceSection({
 }) {
   return (
     <div className="rounded-lg border bg-card p-4 md:p-6 space-y-4 md:space-y-6">
+      {/* 语音设置 */}
       <div>
         <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4">发送语音设置</h3>
         <div className="flex items-center justify-between">
@@ -1274,10 +1267,37 @@ function VoiceSection({
             onCheckedChange={(checked) =>
               onChange({
                 ...config,
-                voice: { use_tts: checked },
+                voice: { ...config.voice, use_tts: checked },
               })
             }
           />
+        </div>
+      </div>
+
+      {/* 转发消息处理设置 */}
+      <div>
+        <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4">转发消息处理设置</h3>
+        <div className="grid gap-2">
+          <Label htmlFor="image-threshold" className="text-sm md:text-base">图片数量阈值</Label>
+          <Input
+            id="image-threshold"
+            type="number"
+            value={config.forward.image_threshold || ''}
+            onChange={(e) =>
+              onChange({
+                ...config,
+                forward: { 
+                  ...config.forward, 
+                  image_threshold: e.target.value ? parseInt(e.target.value) : 0 
+                },
+              })
+            }
+            placeholder="30"
+            className="text-sm md:text-base"
+          />
+          <p className="text-xs text-muted-foreground">
+            转发消息中图片数量超过此值时使用占位符（避免麦麦VLM处理卡死）
+          </p>
         </div>
       </div>
     </div>

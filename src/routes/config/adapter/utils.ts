@@ -25,6 +25,7 @@ export function parseTOML(content: string): AdapterConfig {
       maibot_server: { ...DEFAULT_CONFIG.maibot_server, ...parsed.maibot_server },
       chat: { ...DEFAULT_CONFIG.chat, ...parsed.chat },
       voice: { ...DEFAULT_CONFIG.voice, ...parsed.voice },
+      forward: { ...DEFAULT_CONFIG.forward, ...parsed.forward },
       debug: { ...DEFAULT_CONFIG.debug, ...parsed.debug },
     }
   } catch (error) {
@@ -80,6 +81,12 @@ export function generateTOML(config: AdapterConfig): string {
       },
       voice: {
         use_tts: config.voice.use_tts ?? DEFAULT_CONFIG.voice.use_tts,
+      },
+      forward: {
+        image_threshold: fillDefaults(
+          config.forward.image_threshold || 0,
+          DEFAULT_CONFIG.forward.image_threshold
+        ),
       },
       debug: {
         level: fillDefaults(config.debug.level, DEFAULT_CONFIG.debug.level),
@@ -209,6 +216,16 @@ function addComments(toml: string): string {
     }
     if (line.startsWith('use_tts = ')) {
       result.push(`${line} # 是否使用tts语音（请确保你配置了tts并有对应的adapter）`)
+      continue
+    }
+
+    // [forward] section
+    if (line === '[forward]') {
+      result.push('[forward] # 转发消息处理设置')
+      continue
+    }
+    if (line.startsWith('image_threshold = ')) {
+      result.push(`${line} # 图片数量阈值：转发消息中图片数量超过此值时使用占位符(避免麦麦VLM处理卡死)`)
       continue
     }
 

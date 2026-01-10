@@ -36,6 +36,9 @@ export interface AdapterConfig {
   voice: {
     use_tts: boolean
   }
+  forward: {
+    image_threshold: number
+  }
   debug: {
     level: string
   }
@@ -72,6 +75,9 @@ export const DEFAULT_CONFIG: AdapterConfig = {
   },
   voice: {
     use_tts: false,
+  },
+  forward: {
+    image_threshold: 30,
   },
   debug: {
     level: 'INFO',
