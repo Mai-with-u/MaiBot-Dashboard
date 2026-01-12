@@ -1,3 +1,5 @@
+# 前端仓库已经完整转移到https://github.com/Mai-with-u/MaiBot 麦麦主仓库，此repo使命结束，转为Archive状态
+
 # MaiBot Dashboard
 
 > MaiBot 的现代化 Web 管理面板 - 基于 React 19 + TypeScript + Vite 构建
