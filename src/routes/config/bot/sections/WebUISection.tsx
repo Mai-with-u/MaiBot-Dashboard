@@ -242,6 +242,19 @@ export const WebUISection = React.memo(function WebUISection({ config, onChange 
               />
               <Label className="cursor-pointer">启用安全 Cookie（仅 HTTPS）</Label>
             </div>
+
+            <div className="grid gap-2">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={config.enable_paragraph_content}
+                  onCheckedChange={(checked) => onChange({ ...config, enable_paragraph_content: checked })}
+                />
+                <Label className="cursor-pointer">在知识图谱中加载段落完整内容</Label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                启用后，知识图谱可视化界面会显示段落节点的完整内容。需要加载 embedding store，会占用额外内存（约数百MB）。
+              </p>
+            </div>
           </>
         )}
       </div>

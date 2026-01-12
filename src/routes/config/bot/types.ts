@@ -67,6 +67,11 @@ export interface MemoryConfig {
   agent_timeout_seconds: number
   enable_jargon_detection: boolean
   global_memory: boolean
+  chat_history_topic_check_message_threshold: number
+  chat_history_topic_check_time_hours: number
+  chat_history_topic_check_min_messages: number
+  chat_history_finalize_no_update_checks: number
+  chat_history_finalize_message_count: number
 }
 
 export interface ToolConfig {
@@ -168,6 +173,7 @@ export interface DebugConfig {
 export interface ExperimentalConfig {
   private_plan_style: string
   chat_prompts: string[]
+  lpmm_memory: boolean
 }
 
 export interface MaimMessageConfig {
@@ -197,6 +203,7 @@ export interface WebUIConfig {
   trusted_proxies: string
   trust_xff: boolean
   secure_cookie: boolean
+  enable_paragraph_content: boolean
 }
 
 /**

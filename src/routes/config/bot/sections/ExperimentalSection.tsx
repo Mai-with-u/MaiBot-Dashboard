@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -120,6 +121,22 @@ export const ExperimentalSection = React.memo(function ExperimentalSection({ con
         <h3 className="text-lg font-semibold mb-4">实验性设置</h3>
 
         <div className="grid gap-6">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="lpmm_memory"
+              checked={config.lpmm_memory ?? false}
+              onCheckedChange={(checked) =>
+                onChange({ ...config, lpmm_memory: checked })
+              }
+            />
+            <Label htmlFor="lpmm_memory" className="cursor-pointer">
+              将聊天历史总结导入到 LPMM 知识库
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground -mt-4">
+            开启后，chat_history_summarizer 总结出的历史记录会同时导入到知识库
+          </p>
+
           <div className="grid gap-2">
             <Label htmlFor="private_plan_style">私聊规则（实验性）</Label>
             <Textarea

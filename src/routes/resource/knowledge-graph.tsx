@@ -315,15 +315,12 @@ export function KnowledgeGraphPage() {
 
   // 节点点击事件
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-    const nodeData = nodes.find(n => n.id === node.id)
-    if (nodeData) {
-      setSelectedNodeData({
-        id: node.id,
-        type: node.type as 'entity' | 'paragraph',
-        content: node.data.content,
-      })
-    }
-  }, [nodes])
+    setSelectedNodeData({
+      id: node.id,
+      type: node.type as 'entity' | 'paragraph',
+      content: node.data.content,
+    })
+  }, [])
 
   // 当节点数量或类型改变时自动刷新
   useEffect(() => {
@@ -570,37 +567,50 @@ export function KnowledgeGraphPage() {
 
       {/* 节点详情对话框 */}
       <Dialog open={!!selectedNodeData} onOpenChange={(open) => !open && setSelectedNodeData(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[80vh] grid grid-rows-[auto_1fr_auto] overflow-hidden">
           <DialogHeader>
             <DialogTitle>节点详情</DialogTitle>
           </DialogHeader>
           {selectedNodeData && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">类型</label>
-                  <div className="mt-1">
-                    <Badge variant={selectedNodeData.type === 'entity' ? 'default' : 'secondary'}>
-                      {selectedNodeData.type === 'entity' ? '🏷️ 实体' : '📄 段落'}
-                    </Badge>
+            <ScrollArea className="h-full pr-4">
+              <div className="space-y-4 pb-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">类型</label>
+                    <div className="mt-1">
+                      <Badge variant={selectedNodeData.type === 'entity' ? 'default' : 'secondary'}>
+                        {selectedNodeData.type === 'entity' ? '🏷️ 实体' : '📄 段落'}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">ID</label>
-                <code className="mt-1 block p-2 bg-muted rounded text-xs break-all">
-                  {selectedNodeData.id}
-                </code>
-              </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">ID</label>
+                  <code className="mt-1 block p-2 bg-muted rounded text-xs break-all">
+                    {selectedNodeData.id}
+                  </code>
+                </div>
 
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">内容</label>
-                <ScrollArea className="mt-1 max-h-[400px] p-3 bg-muted rounded border">
-                  <p className="text-sm whitespace-pre-wrap">{selectedNodeData.content}</p>
-                </ScrollArea>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">内容</label>
+                  <div className="mt-1 p-3 bg-muted rounded border">
+                    <p className="text-sm whitespace-pre-wrap break-words">{selectedNodeData.content}</p>
+                  </div>
+                  {selectedNodeData.type === 'paragraph' && selectedNodeData.content && selectedNodeData.content.length < 20 && (
+                    <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded">
+                      <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                        💡 <strong>提示：</strong>段落内容显示不完整？
+                        <br />
+                        您可以在 <strong>配置 → WebUI 服务配置</strong> 中启用 "在知识图谱中加载段落完整内容" 选项，以显示段落的完整文本。
+                        <br />
+                        注意：此功能会额外再次加载 embedding store，占用约数百MB内存。不建议在生产环境中长期开启。
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>

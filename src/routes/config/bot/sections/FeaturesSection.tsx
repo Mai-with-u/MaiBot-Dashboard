@@ -128,6 +128,93 @@ export const FeaturesSection = React.memo(function FeaturesSection({
             <p className="text-xs text-muted-foreground -mt-2">
               允许记忆检索在所有聊天记录中进行全局查询（忽略当前聊天流）
             </p>
+
+            {/* 聊天历史总结配置 */}
+            <div className="border-t pt-4 mt-4">
+              <h4 className="text-sm font-semibold mb-3">聊天历史总结配置</h4>
+              <div className="space-y-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="chat_history_topic_check_message_threshold">话题检查消息数阈值</Label>
+                  <Input
+                    id="chat_history_topic_check_message_threshold"
+                    type="number"
+                    min="1"
+                    value={memoryConfig.chat_history_topic_check_message_threshold ?? 80}
+                    onChange={(e) =>
+                      onMemoryChange({ ...memoryConfig, chat_history_topic_check_message_threshold: parseInt(e.target.value) })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    当累积消息数达到此值时触发话题检查
+                  </p>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="chat_history_topic_check_time_hours">话题检查时间阈值（小时）</Label>
+                  <Input
+                    id="chat_history_topic_check_time_hours"
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={memoryConfig.chat_history_topic_check_time_hours ?? 8.0}
+                    onChange={(e) =>
+                      onMemoryChange({ ...memoryConfig, chat_history_topic_check_time_hours: parseFloat(e.target.value) })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    当距离上次检查超过此时间且消息数达到最小阈值时触发话题检查
+                  </p>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="chat_history_topic_check_min_messages">时间触发最小消息数</Label>
+                  <Input
+                    id="chat_history_topic_check_min_messages"
+                    type="number"
+                    min="1"
+                    value={memoryConfig.chat_history_topic_check_min_messages ?? 20}
+                    onChange={(e) =>
+                      onMemoryChange({ ...memoryConfig, chat_history_topic_check_min_messages: parseInt(e.target.value) })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    时间触发模式下的最小消息数阈值
+                  </p>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="chat_history_finalize_no_update_checks">打包存储连续无更新次数</Label>
+                  <Input
+                    id="chat_history_finalize_no_update_checks"
+                    type="number"
+                    min="1"
+                    value={memoryConfig.chat_history_finalize_no_update_checks ?? 3}
+                    onChange={(e) =>
+                      onMemoryChange({ ...memoryConfig, chat_history_finalize_no_update_checks: parseInt(e.target.value) })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    当话题连续N次检查无新增内容时触发打包存储
+                  </p>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="chat_history_finalize_message_count">打包存储消息条数阈值</Label>
+                  <Input
+                    id="chat_history_finalize_message_count"
+                    type="number"
+                    min="1"
+                    value={memoryConfig.chat_history_finalize_message_count ?? 5}
+                    onChange={(e) =>
+                      onMemoryChange({ ...memoryConfig, chat_history_finalize_message_count: parseInt(e.target.value) })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    当话题的消息条数超过此值时触发打包存储
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
